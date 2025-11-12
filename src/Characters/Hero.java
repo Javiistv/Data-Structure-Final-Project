@@ -4,6 +4,9 @@ import java.util.LinkedList;
 import Items.*;
 import cu.edu.cujae.ceis.tree.general.GeneralTree;
 import Misc.*;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.Queue;
 import javax.swing.Icon;
 
 public class Hero {
@@ -19,6 +22,8 @@ public class Hero {
     private Weapon actualWeapon;
     private GeneralTree<Classes> unlockedClasses;
     private Classes actualClass;
+    private Queue<Task> tasks;
+    private Deque<Task> completedTasks;
 
     public String getName() {
         return name;
@@ -84,6 +89,22 @@ public class Hero {
         this.actualWeapon = actualWeapon;
     }
 
+    public Deque<Task> getCompletedTasks() {
+        return completedTasks;
+    }
+
+    public void addCompletedTasks(Task t) {
+        completedTasks.push(t);
+    }
+
+    public Queue<Task> getTasks() {
+        return tasks;
+    }
+
+    public void addTasks(Task t) {
+        tasks.offer(t);
+    }
+
     public Hero(String name) {
         this.name = name;
         sprite = null;
@@ -96,6 +117,8 @@ public class Hero {
         actualWeapon = null;
         unlockedClasses = new GeneralTree<>();
         this.actualClass = null;
+        tasks = new ArrayDeque<>();
+        completedTasks = new ArrayDeque<>();
     }
 
 }
