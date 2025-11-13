@@ -11,6 +11,7 @@ import javafx.animation.ScaleTransition;
 import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
 import javafx.geometry.Bounds;
+import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
 import javafx.scene.Node;
@@ -56,6 +57,11 @@ public class MainScreen extends GameApplication {
     private double volumeSetting = 0.7;
     private MediaPlayer bgMusic;
 
+    private boolean configOpen = false;
+
+    // Subir el cursor unos píxeles para que no se vea por debajo del botón
+    private static final double CURSOR_UP_OFFSET = 8.0;
+
     @Override
     protected void initSettings(GameSettings settings) {
         settings.setTitle("The Mistery of The Ruins");
@@ -66,22 +72,29 @@ public class MainScreen extends GameApplication {
     @Override
     protected void initInput() {
         FXGL.onKeyDown(KeyCode.UP, () -> {
+            if (configOpen) return;
             selectedIndex = (selectedIndex - 1 + labels.length) % labels.length;
             updateCursorSmooth();
         });
 
         FXGL.onKeyDown(KeyCode.DOWN, () -> {
+            if (configOpen) return;
             selectedIndex = (selectedIndex + 1) % labels.length;
             updateCursorSmooth();
         });
 
-        FXGL.onKeyDown(KeyCode.ENTER, this::activateSelected);
+        FXGL.onKeyDown(KeyCode.ENTER, () -> {
+            if (configOpen) return;
+            activateSelected();
+        });
 
         FXGL.onKeyDown(KeyCode.W, () -> {
+            if (configOpen) return;
             selectedIndex = (selectedIndex - 1 + labels.length) % labels.length;
             updateCursorSmooth();
         });
         FXGL.onKeyDown(KeyCode.S, () -> {
+            if (configOpen) return;
             selectedIndex = (selectedIndex + 1) % labels.length;
             updateCursorSmooth();
         });
@@ -124,6 +137,7 @@ public class MainScreen extends GameApplication {
         bgView.fitWidthProperty().bind(rootPane.widthProperty());
         bgView.fitHeightProperty().bind(rootPane.heightProperty());
 
+        // keep keyboard navigation only
         rootPane.addEventFilter(MouseEvent.ANY, MouseEvent::consume);
         for (Node n : menuBox.getChildren()) {
             n.addEventFilter(MouseEvent.ANY, MouseEvent::consume);
@@ -158,20 +172,18 @@ public class MainScreen extends GameApplication {
         updateCursorStyles();
         Node target = menuBox.getChildren().get(selectedIndex);
         Bounds btnBounds = target.localToScene(target.getBoundsInLocal());
+
         double cursorX = btnBounds.getMinX() - 30;
-        double cursorY = btnBounds.getMinY() + (btnBounds.getHeight() - cursor.getHeight()) / 2.0;
+        double cursorY = btnBounds.getMinY() + (btnBounds.getHeight() - cursor.getHeight()) / 2.0 - CURSOR_UP_OFFSET;
+
         cursor.setTranslateX(cursorX);
         cursor.setTranslateY(cursorY);
     }
 
     private void updateCursorStyles() {
         int total = menuBox.getChildren().size();
-        if (total == 0) {
-            return;
-        }
-        if (selectedIndex >= total) {
-            selectedIndex = 0;
-        }
+        if (total == 0) return;
+        if (selectedIndex >= total) selectedIndex = 0;
 
         if (menuBox.getChildren().get(selectedIndex) instanceof Button
                 && ((Button) menuBox.getChildren().get(selectedIndex)).isDisable()) {
@@ -180,9 +192,7 @@ public class MainScreen extends GameApplication {
             int idx = selectedIndex;
             while (!found) {
                 idx = (idx + 1) % total;
-                if (idx == start) {
-                    break;
-                }
+                if (idx == start) break;
                 Node n = menuBox.getChildren().get(idx);
                 if (n instanceof Button && !((Button) n).isDisable()) {
                     selectedIndex = idx;
@@ -202,9 +212,9 @@ public class MainScreen extends GameApplication {
                 if (b.isDisable()) {
                     b.setStyle(
                             "-fx-background-color: rgba(80,80,80,0.5);"
-                            + " -fx-text-fill: rgba(200,200,200,0.7);"
-                            + " -fx-background-radius: 6;"
-                            + " -fx-padding: 8 12 8 12;"
+                                    + " -fx-text-fill: rgba(200,200,200,0.7);"
+                                    + " -fx-background-radius: 6;"
+                                    + " -fx-padding: 8 12 8 12;"
                     );
                     b.setEffect(null);
                     b.setFont(Font.font(b.getFont().getFamily(), 20));
@@ -214,21 +224,21 @@ public class MainScreen extends GameApplication {
                 if (i == selectedIndex) {
                     b.setStyle(
                             "-fx-background-color: linear-gradient(#FFD54F, #FFC107);"
-                            + " -fx-text-fill: black;"
-                            + " -fx-font-weight: bold;"
-                            + " -fx-border-color: #FFD700;"
-                            + " -fx-border-width: 2;"
-                            + " -fx-background-radius: 6;"
-                            + " -fx-padding: 8 12 8 12;"
+                                    + " -fx-text-fill: black;"
+                                    + " -fx-font-weight: bold;"
+                                    + " -fx-border-color: #FFD700;"
+                                    + " -fx-border-width: 2;"
+                                    + " -fx-background-radius: 6;"
+                                    + " -fx-padding: 8 12 8 12;"
                     );
                     b.setEffect(new DropShadow(BlurType.GAUSSIAN, Color.rgb(0, 0, 0, 0.45), 8, 0.3, 0, 2));
                     b.setFont(Font.font(b.getFont().getFamily(), FontWeight.BOLD, 20));
                 } else {
                     b.setStyle(
                             "-fx-background-color: rgba(0,0,0,0.6);"
-                            + " -fx-text-fill: white;"
-                            + " -fx-background-radius: 6;"
-                            + " -fx-padding: 8 12 8 12;"
+                                    + " -fx-text-fill: white;"
+                                    + " -fx-background-radius: 6;"
+                                    + " -fx-padding: 8 12 8 12;"
                     );
                     b.setEffect(null);
                     b.setFont(Font.font(b.getFont().getFamily(), 20));
@@ -244,7 +254,7 @@ public class MainScreen extends GameApplication {
         Bounds btnBounds = target.localToScene(target.getBoundsInLocal());
 
         double toX = btnBounds.getMinX() - 30;
-        double toY = btnBounds.getMinY() + (btnBounds.getHeight() - cursor.getHeight()) / 2.0;
+        double toY = btnBounds.getMinY() + (btnBounds.getHeight() - cursor.getHeight()) / 2.0 - CURSOR_UP_OFFSET;
 
         TranslateTransition tt = new TranslateTransition(CURSOR_MOVE_DURATION, cursor);
         tt.setToX(toX);
@@ -274,7 +284,7 @@ public class MainScreen extends GameApplication {
                     resultName = name;
                     finished = true;
                 } else {
-                    javafx.scene.control.Alert alert = new Alert(javafx.scene.control.Alert.AlertType.WARNING);
+                    javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.WARNING);
                     alert.setTitle("Nombre inválido");
                     alert.setHeaderText("El nombre no puede estar vacío");
                     alert.setContentText("Introduce un nombre válido.");
@@ -289,6 +299,13 @@ public class MainScreen extends GameApplication {
 
     private void showConfigScreen() {
         Platform.runLater(() -> {
+            if (configOpen) return;
+            configOpen = true;
+
+            for (Node n : menuBox.getChildren()) {
+                if (n instanceof Button) ((Button) n).setDisable(true);
+            }
+
             StackPane overlay = new StackPane();
             overlay.setStyle("-fx-background-color: rgba(0,0,0,0.6);");
             overlay.setPrefSize(800, 600);
@@ -370,9 +387,7 @@ public class MainScreen extends GameApplication {
                 }
                 if (!deleted && game != null && game.getArchives() != null) {
                     File arch = game.getArchives();
-                    if (arch.exists()) {
-                        deleted = arch.delete();
-                    }
+                    if (arch.exists()) deleted = arch.delete();
                 }
 
                 Alert info = new Alert(Alert.AlertType.INFORMATION);
@@ -402,9 +417,25 @@ public class MainScreen extends GameApplication {
             closeBtn.setMinWidth(120);
             closeBtn.setOnAction(ev -> {
                 FXGL.getGameScene().removeUINode(overlay);
-                if (rootPane != null) {
-                    rootPane.setCursor(Cursor.NONE);
+                if (rootPane != null) rootPane.setCursor(Cursor.NONE);
+                for (Node n : menuBox.getChildren()) {
+                    if (n instanceof Button) {
+                        Button b = (Button) n;
+                        boolean saveExists = (game != null && game.getSave() != null && game.getSave().exists());
+                        if ("Continuar".equals(b.getText())) {
+                            b.setDisable(!saveExists);
+                            if (b.isDisable()) {
+                                b.setStyle("-fx-background-color: rgba(80,80,80,0.5); -fx-text-fill: rgba(200,200,200,0.7);");
+                            } else {
+                                b.setStyle("-fx-background-color: rgba(0,0,0,0.6); -fx-text-fill: white; -fx-background-radius: 6; -fx-padding: 8 12 8 12;");
+                            }
+                        } else {
+                            b.setDisable(false);
+                        }
+                    }
                 }
+                configOpen = false;
+                Platform.runLater(this::updateCursorSmooth);
             });
 
             javafx.scene.layout.HBox foot = new javafx.scene.layout.HBox(12, deleteBtn, closeBtn);
@@ -416,9 +447,7 @@ public class MainScreen extends GameApplication {
             StackPane.setAlignment(content, Pos.CENTER);
 
             overlay.addEventFilter(MouseEvent.MOUSE_PRESSED, ev -> {
-                if (ev.getTarget() == overlay) {
-                    ev.consume();
-                }
+                if (ev.getTarget() == overlay) ev.consume();
             });
 
             FXGL.getGameScene().addUINode(overlay);
@@ -428,28 +457,17 @@ public class MainScreen extends GameApplication {
     }
 
     private void startBackgroundMusic() {
-        boolean canStart = true;
-
-        if (bgMusic != null) {
-            canStart = false;
-        }
-
         try {
+            if (bgMusic != null) return;
             URL res = getClass().getResource("/Resources/music/mainScreen.mp3");
-            if (res == null) {
-                canStart = false;
-            }
-
-            if (canStart) {
-                Media media = new Media(res.toExternalForm());
-                bgMusic = new MediaPlayer(media);
-                bgMusic.setCycleCount(MediaPlayer.INDEFINITE);
-                bgMusic.setVolume(volumeSetting);
-                bgMusic.play();
-            }
+            if (res == null) return;
+            Media media = new Media(res.toExternalForm());
+            bgMusic = new MediaPlayer(media);
+            bgMusic.setCycleCount(MediaPlayer.INDEFINITE);
+            bgMusic.setVolume(volumeSetting);
+            bgMusic.play();
         } catch (Throwable ignored) {
         }
-
     }
 
     private void stopBackgroundMusic() {
@@ -466,24 +484,19 @@ public class MainScreen extends GameApplication {
     private void applyVolume(double vol) {
         this.volumeSetting = vol;
         try {
-            if (bgMusic != null) {
-                bgMusic.setVolume(vol);
-            }
-        } catch (Throwable ignored) {
-        }
+            if (bgMusic != null) bgMusic.setVolume(vol);
+        } catch (Throwable ignored) { }
         try {
             Object audioRoot = null;
             try {
                 var m = FXGL.class.getMethod("getAudioPlayer");
                 audioRoot = m.invoke(null);
-            } catch (NoSuchMethodException ignored) {
-            }
+            } catch (NoSuchMethodException ignored) { }
             if (audioRoot == null) {
                 try {
                     var m2 = FXGL.class.getMethod("getAudio");
                     audioRoot = m2.invoke(null);
-                } catch (NoSuchMethodException ignored) {
-                }
+                } catch (NoSuchMethodException ignored) { }
             }
             if (audioRoot != null) {
                 Class<?> cls = audioRoot.getClass();
@@ -497,25 +510,17 @@ public class MainScreen extends GameApplication {
                             var mm2 = cls.getMethod(name, float.class);
                             mm2.invoke(audioRoot, (float) vol);
                         }
-                    } catch (Throwable ignored) {
-                    }
+                    } catch (Throwable ignored) { }
                 }
-                try {
-                    var sm = cls.getMethod("setMusicVolume", double.class);
-                    sm.invoke(audioRoot, vol);
-                } catch (Throwable ignored) {
-                }
-                try {
-                    var ss = cls.getMethod("setSoundVolume", double.class);
-                    ss.invoke(audioRoot, vol);
-                } catch (Throwable ignored) {
-                }
+                try { var sm = cls.getMethod("setMusicVolume", double.class); sm.invoke(audioRoot, vol); } catch (Throwable ignored) { }
+                try { var ss = cls.getMethod("setSoundVolume", double.class); ss.invoke(audioRoot, vol); } catch (Throwable ignored) { }
             }
-        } catch (Throwable ignored) {
-        }
+        } catch (Throwable ignored) { }
     }
 
     private void activateSelected() {
+        if (configOpen) return;
+
         String sel = labels[selectedIndex];
         Node target = menuBox.getChildren().get(selectedIndex);
 
