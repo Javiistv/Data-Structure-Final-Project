@@ -105,6 +105,7 @@ public class Game {
             raf.writeInt(data.length);
             raf.write(data);
             created = true;
+            raf.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -119,6 +120,7 @@ public class Game {
             raf.readFully(data);
             hero = (Hero) Convert.toObject(data);
             correct = true;
+            raf.close();
         } catch (IOException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
