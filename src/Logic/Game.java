@@ -12,6 +12,7 @@ import java.io.RandomAccessFile;
 import java.time.LocalDateTime;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 
 public class Game {
@@ -145,4 +146,46 @@ public class Game {
         }
         return correct;
     }
+
+    public boolean combat(Monster m) {
+        int attack = m.getAttack() + m.getActualWeapon().getAttack();
+        int defense = hero.getDefense() + hero.getArmor().getDefense();
+        int damage = (attack - defense);
+        boolean attacked = false;
+        if (damage > 0) {
+            int life = (hero.getActualLife()) - damage;
+            if (life < 0) {
+                hero.setActualLife(0);
+            } else {
+                hero.setActualLife(life);
+            }
+            attacked = true;
+        }
+        return attacked;
+    }
+    
+
+    public boolean checkGameOver(int life) {
+        boolean dead = false;
+        if (life == 0) {
+            dead = true;
+        }
+        return dead;
+
+    }
+
+    public boolean heal(Wares w) {
+        boolean cured = false;
+        if (hero.getActualLife() < hero.getLife()) {
+            if (hero.getLife() < w.getHealing() + hero.getActualLife()) {
+                hero.setActualLife(hero.getLife());
+
+            } else {
+                hero.setActualLife(hero.getActualLife() + w.getHealing());
+            }
+            cured = true;
+        }
+        return cured;
+    }
+
 }
