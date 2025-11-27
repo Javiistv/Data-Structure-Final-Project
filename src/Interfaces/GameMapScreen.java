@@ -14,10 +14,14 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
 import javafx.scene.transform.Scale;
+import java.net.URL;
 import java.util.Optional;
 
 public class GameMapScreen {
@@ -38,11 +42,18 @@ public class GameMapScreen {
     private final double mapW;
     private final double mapH;
 
+    private MediaPlayer mapMusic;
+
     public GameMapScreen(Game game) {
         Hero hero = game != null ? game.getHero() : null;
 
         Image mapImg = null;
-        try { mapImg = new Image(getClass().getResourceAsStream("/Resources/textures/map.png")); } catch (Throwable ignored) { }
+        try {
+            mapImg = new Image(getClass().getResourceAsStream("/Resources/textures/map.png"));
+        } catch (Throwable ignored) {
+            mapImg = null;
+        }
+
         if (mapImg == null) {
             mapW = 800;
             mapH = 600;
@@ -71,18 +82,25 @@ public class GameMapScreen {
         root.setPrefSize(800, 600);
         root.getChildren().add(container);
 
+        root.addEventFilter(MouseEvent.ANY, MouseEvent::consume);
+
         installControls();
         installEscHandler();
 
         mover = new AnimationTimer() {
             private long last = -1;
+
             @Override
             public void handle(long now) {
-                if (last < 0) last = now;
+                if (last < 0) {
+                    last = now;
+                }
                 double dt = (now - last) / 1e9;
                 last = now;
                 updateVelocity();
-                if (vx == 0 && vy == 0) return;
+                if (vx == 0 && vy == 0) {
+                    return;
+                }
                 double dx = vx * dt;
                 double dy = vy * dt;
                 moveHero(dx, dy);
@@ -96,17 +114,27 @@ public class GameMapScreen {
                     root.requestFocus();
                     mover.start();
                 });
-            } else mover.stop();
+            } else {
+                mover.stop();
+            }
         });
     }
 
     private ImageView createHeroView(Hero hero) {
         Image img = null;
         if (hero != null) {
-            try { img = hero.getImage(); } catch (Throwable ignored) { img = null; }
+            try {
+                img = hero.getImage();
+            } catch (Throwable ignored) {
+                img = null;
+            }
         }
         if (img == null) {
-            try { img = new Image(getClass().getResourceAsStream("/Resources/sprites/hero.png")); } catch (Throwable ignored) { }
+            try {
+                img = new Image(getClass().getResourceAsStream("/Resources/sprites/hero.png"));
+            } catch (Throwable ignored) {
+                img = null;
+            }
         }
         ImageView iv = new ImageView(img);
         iv.setPreserveRatio(true);
@@ -164,18 +192,42 @@ public class GameMapScreen {
 
         root.addEventFilter(KeyEvent.KEY_PRESSED, ev -> {
             KeyCode k = ev.getCode();
-            if (k == KeyCode.W || k == KeyCode.UP) up = true;
-            if (k == KeyCode.S || k == KeyCode.DOWN) down = true;
-            if (k == KeyCode.A || k == KeyCode.LEFT) left = true;
-            if (k == KeyCode.D || k == KeyCode.RIGHT) right = true;
+            if (k == KeyCode.ENTER) {
+                ev.consume();
+                return;
+            }
+            if (k == KeyCode.W || k == KeyCode.UP) {
+                up = true;
+            }
+            if (k == KeyCode.S || k == KeyCode.DOWN) {
+                down = true;
+            }
+            if (k == KeyCode.A || k == KeyCode.LEFT) {
+                left = true;
+            }
+            if (k == KeyCode.D || k == KeyCode.RIGHT) {
+                right = true;
+            }
         });
 
         root.addEventFilter(KeyEvent.KEY_RELEASED, ev -> {
             KeyCode k = ev.getCode();
-            if (k == KeyCode.W || k == KeyCode.UP) up = false;
-            if (k == KeyCode.S || k == KeyCode.DOWN) down = false;
-            if (k == KeyCode.A || k == KeyCode.LEFT) left = false;
-            if (k == KeyCode.D || k == KeyCode.RIGHT) right = false;
+            if (k == KeyCode.ENTER) {
+                ev.consume();
+                return;
+            }
+            if (k == KeyCode.W || k == KeyCode.UP) {
+                up = false;
+            }
+            if (k == KeyCode.S || k == KeyCode.DOWN) {
+                down = false;
+            }
+            if (k == KeyCode.A || k == KeyCode.LEFT) {
+                left = false;
+            }
+            if (k == KeyCode.D || k == KeyCode.RIGHT) {
+                right = false;
+            }
         });
 
         root.setFocusTraversable(true);
@@ -198,18 +250,31 @@ public class GameMapScreen {
             dlg.setContentText("Si vuelves al menú, la partida seguirá guardada en disco.");
             Optional<ButtonType> opt = dlg.showAndWait();
             if (opt.isPresent() && opt.get() == ButtonType.OK) {
-                try { FXGL.getGameScene().removeUINode(root); } catch (Throwable ignored) {}
+                stopMapMusic();
+                try {
+                    FXGL.getGameScene().removeUINode(root);
+                } catch (Throwable ignored) {
+                }
                 MainScreen.restoreMenuAndMusic();
             }
         });
     }
 
     private void updateVelocity() {
-        vx = 0; vy = 0;
-        if (left) vx -= SPEED;
-        if (right) vx += SPEED;
-        if (up) vy -= SPEED;
-        if (down) vy += SPEED;
+        vx = 0;
+        vy = 0;
+        if (left) {
+            vx -= SPEED;
+        }
+        if (right) {
+            vx += SPEED;
+        }
+        if (up) {
+            vy -= SPEED;
+        }
+        if (down) {
+            vy += SPEED;
+        }
     }
 
     private void moveHero(double dx, double dy) {
@@ -222,10 +287,18 @@ public class GameMapScreen {
         double localX = curX + dx;
         double localY = curY + dy;
 
-        if (localX < 0) localX = 0;
-        if (localY < 0) localY = 0;
-        if (localX + hw > mapW) localX = mapW - hw;
-        if (localY + hh > mapH) localY = mapH - hh;
+        if (localX < 0) {
+            localX = 0;
+        }
+        if (localY < 0) {
+            localY = 0;
+        }
+        if (localX + hw > mapW) {
+            localX = mapW - hw;
+        }
+        if (localY + hh > mapH) {
+            localY = mapH - hh;
+        }
 
         heroView.setLayoutX(localX);
         heroView.setLayoutY(localY);
@@ -233,14 +306,48 @@ public class GameMapScreen {
 
     public void show() {
         Platform.runLater(() -> {
+            MainScreen.hideMenu();
+            startMapMusic();
             FXGL.getGameScene().addUINode(root);
             root.requestFocus();
         });
     }
 
+    private void startMapMusic() {
+        try {
+            stopMapMusic();
+            URL res = getClass().getResource("/Resources/music/gameMapScreen.mp3");
+            if (res == null) {
+                return;
+            }
+            Media media = new Media(res.toExternalForm());
+            mapMusic = new MediaPlayer(media);
+            mapMusic.setCycleCount(MediaPlayer.INDEFINITE);
+            double vol = MainScreen.getVolumeSetting();
+            mapMusic.setVolume(vol);
+            mapMusic.play();
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private void stopMapMusic() {
+        try {
+            if (mapMusic != null) {
+                mapMusic.stop();
+                mapMusic.dispose();
+                mapMusic = null;
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
     private static double clamp(double v, double lo, double hi) {
-        if (v < lo) return lo;
-        if (v > hi) return hi;
-        return v;
+        double out = v;
+        if (out < lo) {
+            out = lo;
+        } else if (out > hi) {
+            out = hi;
+        }
+        return out;
     }
 }
