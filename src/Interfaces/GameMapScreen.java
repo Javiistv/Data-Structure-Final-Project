@@ -31,10 +31,10 @@ import java.util.Optional;
 
 public class GameMapScreen {
 
-    private final StackPane root;
+    public final StackPane root;
     private final Pane container;
     private final ImageView mapView;
-    private final ImageView heroView;
+    public final ImageView heroView;
     private final Scale containerScale;
 
     private double lastMouseX, lastMouseY;
@@ -49,23 +49,53 @@ public class GameMapScreen {
 
     private MediaPlayer mapMusic;
 
-    // Obstáculos: villas
     private final List<Obstacle> obstacles = new ArrayList<>();
     private Obstacle currentInteractable = null;
 
-    public enum Direction { NONE, N, NE, E, SE, S, SW, W, NW }
+    private final Game game;
+
+    public enum Direction {
+        NONE, N, NE, E, SE, S, SW, W, NW
+    }
     private Direction currentDirection = Direction.NONE;
 
-    // Colisión reducida: 22% del tamaño visual
     private static final double VILLAGE_COLLISION_SCALE = 0.22;
 
+    // Offset específico para FIELD_VILLAGE (sube la colisión)
+    private static final double FV_COLLISION_OFFSET_Y = -18.0;
+    private static final Double FV_COLLISION_W = null;
+    private static final Double FV_COLLISION_H = null;
+
+    private enum ObstacleType {
+        VILLAGE, BLOCK
+    }
+
+    private static class Obstacle {
+
+        final Rectangle2D visualRect;
+        final Rectangle2D collisionRect;
+        final ObstacleType type;
+        final String id;
+
+        Obstacle(Rectangle2D visual, Rectangle2D collision, ObstacleType type, String id) {
+            this.visualRect = visual;
+            this.collisionRect = collision;
+            this.type = type;
+            this.id = id;
+        }
+    }
+
+    // Indica si la posición del héroe ya fue inicializada desde fuera (MainScreen)
+    private boolean heroPositionInitialized = false;
+
     public GameMapScreen(Game game) {
+        this.game = game;
         Hero hero = game != null ? game.getHero() : null;
 
-        Image mapImg = null;
+        Image mapImg;
         try {
             mapImg = new Image(getClass().getResourceAsStream("/Resources/textures/map.png"));
-        } catch (Throwable ignored) {
+        } catch (Throwable t) {
             mapImg = null;
         }
 
@@ -100,29 +130,39 @@ public class GameMapScreen {
         root.addEventFilter(MouseEvent.ANY, MouseEvent::consume);
 
         populateVillagesFromList();
+        populateExtraBlocks();
 
         installControls();
         installEscHandler();
 
         mover = new AnimationTimer() {
             private long last = -1;
+
             @Override
             public void handle(long now) {
-                if (last < 0) last = now;
+                if (last < 0) {
+                    last = now;
+                }
                 double dt = (now - last) / 1e9;
                 last = now;
                 updateVelocity();
-                if (vx == 0 && vy == 0) return;
-                double dx = vx * dt;
-                double dy = vy * dt;
-                moveHeroWithCollision(dx, dy);
+                boolean moving = (vx != 0 || vy != 0);
+                if (moving) {
+                    double dx = vx * dt;
+                    double dy = vy * dt;
+                    moveHeroWithCollision(dx, dy);
+                }
             }
         };
 
-        root.sceneProperty().addListener((obs, old, nw) -> {
-            if (nw != null) {
+        // Si la escena se asigna, posicionamos el héroe solo si no se ha inicializado externamente
+        root.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            boolean sceneReady = newScene != null;
+            if (sceneReady) {
                 Platform.runLater(() -> {
-                    positionHeroCenter();
+                    if (!heroPositionInitialized) {
+                        positionHeroCenter();
+                    }
                     root.requestFocus();
                     mover.start();
                 });
@@ -135,10 +175,16 @@ public class GameMapScreen {
     private ImageView createHeroView(Hero hero) {
         Image img = null;
         if (hero != null) {
-            try { img = hero.getImage(); } catch (Throwable ignored) { img = null; }
+            try {
+                img = hero.getImage();
+            } catch (Throwable ignored) {
+            }
         }
         if (img == null) {
-            try { img = new Image(getClass().getResourceAsStream("/Resources/sprites/hero.png")); } catch (Throwable ignored) { img = null; }
+            try {
+                img = new Image(getClass().getResourceAsStream("/Resources/sprites/hero.png"));
+            } catch (Throwable ignored) {
+            }
         }
         ImageView iv = new ImageView(img);
         iv.setPreserveRatio(true);
@@ -153,27 +199,30 @@ public class GameMapScreen {
         double hh = heroView.getBoundsInLocal().getHeight();
         heroView.setLayoutX((mapW - hw) / 2.0);
         heroView.setLayoutY((mapH - hh) / 2.0);
+        heroPositionInitialized = true;
     }
 
     private void installControls() {
         root.addEventFilter(ScrollEvent.SCROLL, ev -> {
-            if (ev.isControlDown()) {
+            boolean ctrl = ev.isControlDown();
+            if (ctrl) {
                 double delta = ev.getDeltaY() > 0 ? 1.1 : 0.9;
                 double newScale = clamp(containerScale.getX() * delta, 0.4, 3.5);
                 containerScale.setX(newScale);
                 containerScale.setY(newScale);
-                ev.consume();
             }
+            ev.consume();
         });
 
         mapView.setOnMousePressed(e -> {
-            if (e.getButton() == MouseButton.PRIMARY) {
+            boolean primary = e.getButton() == MouseButton.PRIMARY;
+            if (primary) {
                 lastMouseX = e.getSceneX();
                 lastMouseY = e.getSceneY();
                 draggingMap = true;
                 root.setCursor(Cursor.CLOSED_HAND);
-                e.consume();
             }
+            e.consume();
         });
 
         mapView.setOnMouseDragged(e -> {
@@ -184,8 +233,8 @@ public class GameMapScreen {
                 container.setTranslateY(container.getTranslateY() + dy);
                 lastMouseX = e.getSceneX();
                 lastMouseY = e.getSceneY();
-                e.consume();
             }
+            e.consume();
         });
 
         mapView.setOnMouseReleased(e -> {
@@ -202,39 +251,49 @@ public class GameMapScreen {
 
         root.addEventFilter(KeyEvent.KEY_PRESSED, ev -> {
             KeyCode k = ev.getCode();
+            boolean handled = false;
+
             if (k == KeyCode.ENTER) {
-                ev.consume();
-                if (currentInteractable != null) {
-                    Platform.runLater(() -> {
-                        Alert a = new Alert(Alert.AlertType.INFORMATION);
-                        a.setTitle("Interacción");
-                        a.setHeaderText(null);
-                        a.setContentText("Has interactuado con una villa");
-                        a.showAndWait();
-                    });
+                handled = true;
+                boolean readyToEnter = currentInteractable != null && currentInteractable.type == ObstacleType.VILLAGE;
+                if (readyToEnter) {
+                    enterVillage(currentInteractable);
                 }
-                return;
-            }
-            if (k == KeyCode.P) {
-                ev.consume();
+            } else if (k == KeyCode.P) {
+                handled = true;
                 System.out.println("Hero map top-left: " + getHeroMapTopLeft());
                 System.out.println("Hero map center: " + getHeroMapCenter());
                 System.out.println("Hero scene center: " + getHeroSceneCenter());
-                System.out.println("Hero direction: " + getHeroDirection());
-                return;
+                System.out.println("Hero direction: " + getHeroDirection().name());
+            } else if (k == KeyCode.W || k == KeyCode.UP) {
+                up = true;
+            } else if (k == KeyCode.S || k == KeyCode.DOWN) {
+                down = true;
+            } else if (k == KeyCode.A || k == KeyCode.LEFT) {
+                left = true;
+            } else if (k == KeyCode.D || k == KeyCode.RIGHT) {
+                right = true;
             }
-            if (k == KeyCode.W || k == KeyCode.UP) up = true;
-            if (k == KeyCode.S || k == KeyCode.DOWN) down = true;
-            if (k == KeyCode.A || k == KeyCode.LEFT) left = true;
-            if (k == KeyCode.D || k == KeyCode.RIGHT) right = true;
+
+            if (handled) {
+                ev.consume();
+            }
         });
 
         root.addEventFilter(KeyEvent.KEY_RELEASED, ev -> {
             KeyCode k = ev.getCode();
-            if (k == KeyCode.W || k == KeyCode.UP) up = false;
-            if (k == KeyCode.S || k == KeyCode.DOWN) down = false;
-            if (k == KeyCode.A || k == KeyCode.LEFT) left = false;
-            if (k == KeyCode.D || k == KeyCode.RIGHT) right = false;
+            if (k == KeyCode.W || k == KeyCode.UP) {
+                up = false;
+            }
+            if (k == KeyCode.S || k == KeyCode.DOWN) {
+                down = false;
+            }
+            if (k == KeyCode.A || k == KeyCode.LEFT) {
+                left = false;
+            }
+            if (k == KeyCode.D || k == KeyCode.RIGHT) {
+                right = false;
+            }
         });
 
         root.setFocusTraversable(true);
@@ -250,68 +309,81 @@ public class GameMapScreen {
     }
 
     private void confirmReturnToMenu() {
-        Platform.runLater(() -> {
-            Alert dlg = new Alert(Alert.AlertType.CONFIRMATION);
-            dlg.setTitle("Volver al menú");
-            dlg.setHeaderText("¿Quieres volver al menú principal?");
-            dlg.setContentText("Si vuelves al menú, la partida seguirá guardada en disco.");
-            Optional<ButtonType> opt = dlg.showAndWait();
-            if (opt.isPresent() && opt.get() == ButtonType.OK) {
-                stopMapMusic();
-                try { FXGL.getGameScene().removeUINode(root); } catch (Throwable ignored) {}
-                MainScreen.restoreMenuAndMusic();
+        Alert dlg = new Alert(Alert.AlertType.CONFIRMATION);
+        dlg.setTitle("Volver al menú");
+        dlg.setHeaderText("¿Quieres volver al menú principal?");
+        dlg.setContentText("Si vuelves al menú, la partida seguirá guardada en disco.");
+        Optional<ButtonType> opt = dlg.showAndWait();
+        boolean ok = opt.isPresent() && opt.get() == ButtonType.OK;
+        if (ok) {
+            // Guardar la posición y la localización en el Heroe
+            try {
+                if (game != null && game.getHero() != null) {
+                    Hero h = game.getHero();
+                    h.setLastLocation(Hero.Location.MAP);
+                    h.setLastPosX(heroView.getLayoutX());
+                    h.setLastPosY(heroView.getLayoutY());
+                    try {
+                        game.createSaveGame();
+                    } catch (Throwable ignored) {
+                    }
+                }
+            } catch (Throwable ignored) {
             }
-        });
+
+            stopMapMusic();
+            try {
+                FXGL.getGameScene().removeUINode(root);
+            } catch (Throwable ignored) {
+            }
+            MainScreen.restoreMenuAndMusic();
+        }
     }
 
     private void updateVelocity() {
         vx = 0;
         vy = 0;
-        if (left) vx -= SPEED;
-        if (right) vx += SPEED;
-        if (up) vy -= SPEED;
-        if (down) vy += SPEED;
-
-        if (vx != 0 || vy != 0) {
-            Direction newDir = directionFromVector(vx, vy);
-            setDirectionIfChanged(newDir);
-        } else {
-            setDirectionIfChanged(Direction.NONE);
+        if (left) {
+            vx -= SPEED;
         }
+        if (right) {
+            vx += SPEED;
+        }
+        if (up) {
+            vy -= SPEED;
+        }
+        if (down) {
+            vy += SPEED;
+        }
+        Direction newDir = (vx != 0 || vy != 0) ? directionFromVector(vx, vy) : Direction.NONE;
+        setDirectionIfChanged(newDir);
     }
 
     private void moveHeroWithCollision(double dx, double dy) {
         currentInteractable = null;
+
         double hw = heroView.getBoundsInLocal().getWidth();
         double hh = heroView.getBoundsInLocal().getHeight();
 
-        double curX = heroView.getLayoutX();
-        double curY = heroView.getLayoutY();
-
-        double proposedX = curX + dx;
-        double proposedY = curY + dy;
-
-        if (proposedX < 0) proposedX = 0;
-        if (proposedY < 0) proposedY = 0;
-        if (proposedX + hw > mapW) proposedX = mapW - hw;
-        if (proposedY + hh > mapH) proposedY = mapH - hh;
+        double proposedX = clamp(heroView.getLayoutX() + dx, 0, mapW - hw);
+        double proposedY = clamp(heroView.getLayoutY() + dy, 0, mapH - hh);
 
         Rectangle2D heroRect = new Rectangle2D(proposedX, proposedY, hw, hh);
 
         boolean blocked = false;
         for (Obstacle ob : obstacles) {
-            if (heroRect.intersects(ob.collisionRect)) {
+            boolean hit = heroRect.intersects(ob.collisionRect);
+            if (hit && ob.type == ObstacleType.VILLAGE) {
                 currentInteractable = ob;
-                blocked = true;
-                break;
             }
+            blocked = blocked || hit;
         }
 
-        if (!blocked) {
+        if (blocked) {
+            setDirectionIfChanged(Direction.NONE);
+        } else {
             heroView.setLayoutX(proposedX);
             heroView.setLayoutY(proposedY);
-        } else {
-            setDirectionIfChanged(Direction.NONE);
         }
     }
 
@@ -325,55 +397,84 @@ public class GameMapScreen {
         });
     }
 
-    private void startMapMusic() {
+    public void startMapMusic() {
         try {
             stopMapMusic();
             URL res = getClass().getResource("/Resources/music/gameMapScreen.mp3");
-            if (res == null) return;
-            Media media = new Media(res.toExternalForm());
-            mapMusic = new MediaPlayer(media);
-            mapMusic.setCycleCount(MediaPlayer.INDEFINITE);
-            double vol = MainScreen.getVolumeSetting();
-            mapMusic.setVolume(vol);
-            mapMusic.play();
-        } catch (Throwable ignored) { }
+            boolean hasRes = res != null;
+            if (hasRes) {
+                Media media = new Media(res.toExternalForm());
+                mapMusic = new MediaPlayer(media);
+                mapMusic.setCycleCount(MediaPlayer.INDEFINITE);
+                mapMusic.setVolume(MainScreen.getVolumeSetting());
+                mapMusic.play();
+            }
+        } catch (Throwable ignored) {
+        }
     }
 
-    private void stopMapMusic() {
+    public void stopMapMusic() {
         try {
-            if (mapMusic != null) {
+            boolean exists = mapMusic != null;
+            if (exists) {
                 mapMusic.stop();
                 mapMusic.dispose();
                 mapMusic = null;
             }
-        } catch (Throwable ignored) { }
+        } catch (Throwable ignored) {
+        }
     }
 
     private static double clamp(double v, double lo, double hi) {
         double out = v;
-        if (out < lo) out = lo;
-        else if (out > hi) out = hi;
+        if (out < lo) {
+            out = lo;
+        } else if (out > hi) {
+            out = hi;
+        }
         return out;
     }
 
     private Direction directionFromVector(double vx, double vy) {
-        if (vx == 0 && vy == 0) return Direction.NONE;
+        if (vx == 0 && vy == 0) {
+            return Direction.NONE;
+        }
         double angle = Math.toDegrees(Math.atan2(-vy, vx));
-        if (angle < 0) angle += 360.0;
+        if (angle < 0) {
+            angle += 360.0;
+        }
 
-        if (angle >= 337.5 || angle < 22.5) return Direction.E;
-        if (angle >= 22.5 && angle < 67.5) return Direction.NE;
-        if (angle >= 67.5 && angle < 112.5) return Direction.N;
-        if (angle >= 112.5 && angle < 157.5) return Direction.NW;
-        if (angle >= 157.5 && angle < 202.5) return Direction.W;
-        if (angle >= 202.5 && angle < 247.5) return Direction.SW;
-        if (angle >= 247.5 && angle < 292.5) return Direction.S;
-        if (angle >= 292.5 && angle < 337.5) return Direction.SE;
+        if (angle >= 337.5 || angle < 22.5) {
+            return Direction.E;
+        }
+        if (angle < 67.5) {
+            return Direction.NE;
+        }
+        if (angle < 112.5) {
+            return Direction.N;
+        }
+        if (angle < 157.5) {
+            return Direction.NW;
+        }
+        if (angle < 202.5) {
+            return Direction.W;
+        }
+        if (angle < 247.5) {
+            return Direction.SW;
+        }
+        if (angle < 292.5) {
+            return Direction.S;
+        }
+        if (angle < 337.5) {
+            return Direction.SE;
+        }
         return Direction.NONE;
     }
 
     private void setDirectionIfChanged(Direction newDir) {
-        if (newDir == null) newDir = Direction.NONE;
+        if (newDir == null) {
+            newDir = Direction.NONE;
+        }
         currentDirection = newDir;
     }
 
@@ -405,33 +506,49 @@ public class GameMapScreen {
         return container.localToScene(mapX, mapY);
     }
 
-    private static class Obstacle {
-        final Rectangle2D visualRect;
-        final Rectangle2D collisionRect;
-        Obstacle(Rectangle2D visual, Rectangle2D collision) {
-            visualRect = visual;
-            collisionRect = collision;
-        }
-    }
-
-    private void addVillageAtCenter(Point2D center, double visualW, double visualH) {
-        double vx = center.getX() - visualW / 2.0;
-        double vy = center.getY() - visualH / 2.0;
-        Rectangle2D visual = new Rectangle2D(vx, vy, visualW, visualH);
+    private void addVillageAtCenter(Point2D center, double visualW, double visualH, String id) {
+        double vxVisual = center.getX() - visualW / 2.0;
+        double vyVisual = center.getY() - visualH / 2.0;
+        Rectangle2D visual = new Rectangle2D(vxVisual, vyVisual, visualW, visualH);
 
         double cw = visualW * VILLAGE_COLLISION_SCALE;
         double ch = visualH * VILLAGE_COLLISION_SCALE;
-        double cx = center.getX() - cw / 2.0;
-        double cy = center.getY() - ch / 2.0;
-        Rectangle2D collision = new Rectangle2D(cx, cy, cw, ch);
 
-        obstacles.add(new Obstacle(visual, collision));
+        double finalW = cw;
+        double finalH = ch;
+        double offsetY = 0.0;
+
+        if ("FIELD_VILLAGE".equals(id)) {
+            if (FV_COLLISION_W != null) {
+                finalW = FV_COLLISION_W;
+            }
+            if (FV_COLLISION_H != null) {
+                finalH = FV_COLLISION_H;
+            }
+            offsetY = FV_COLLISION_OFFSET_Y;
+        }
+
+        double cx = center.getX() - finalW / 2.0;
+        double cy = center.getY() - finalH / 2.0 + offsetY;
+        Rectangle2D collision = new Rectangle2D(cx, cy, finalW, finalH);
+
+        obstacles.add(new Obstacle(visual, collision, ObstacleType.VILLAGE, id));
+    }
+
+    private void addBlockAtCenter(Point2D center, double width, double height) {
+        double x = center.getX() - width / 2.0;
+        double y = center.getY() - height / 2.0;
+        Rectangle2D collision = new Rectangle2D(x, y, width, height);
+        obstacles.add(new Obstacle(null, collision, ObstacleType.BLOCK, null));
     }
 
     private void populateVillagesFromList() {
         obstacles.clear();
 
-        Point2D[] villageCenters = new Point2D[] {
+        double visualW = 64;
+        double visualH = 48;
+
+        Point2D[] villageCenters = new Point2D[]{
             new Point2D(407.0, 358.5165319999998),
             new Point2D(435.8005579999999, 358.5165319999998),
             new Point2D(458.8777639999999, 358.5165319999998),
@@ -450,17 +567,100 @@ public class GameMapScreen {
             new Point2D(745.1885540000004, 262.65198799999985)
         };
 
-        // Visual reducido para que la colisión sea más ajustada
-        double visualW = 64;
-        double visualH = 48;
+        for (int i = 0; i < villageCenters.length; i++) {
+            addVillageAtCenter(villageCenters[i], visualW, visualH, "VILLA_" + i);
+        }
 
-        for (Point2D c : villageCenters) {
-            addVillageAtCenter(c, visualW, visualH);
+        // FIELD_VILLAGE colocada con id FIELD_VILLAGE (colisión ajustada por offset)
+        addVillageAtCenter(new Point2D(432.9572420000002, 387.930548), visualW, visualH, "FIELD_VILLAGE");
+    }
+
+    private void populateExtraBlocks() {
+        double blockW = 20;
+        double blockH = 20;
+
+        Point2D[] blockCenters = new Point2D[]{
+            new Point2D(265.78503199999994, 351.7745599999999),
+            new Point2D(265.78503199999994, 299.99973800000004),
+            new Point2D(265.78503199999994, 285.5473580000001),
+            new Point2D(265.78503199999994, 271.2116360000001),
+            new Point2D(72.98749999999998, 210.93302),
+            new Point2D(72.98749999999998, 179.40848599999995),
+            new Point2D(44.17545799999998, 167.86434799999992),
+            new Point2D(27.035443999999977, 167.86434799999992),
+            new Point2D(27.035443999999977, 190.76171599999995),
+            new Point2D(27.035443999999977, 208.00933399999997),
+            new Point2D(47.15656399999998, 208.00933399999997),
+            new Point2D(122.23544599999997, 147.39627799999997),
+            new Point2D(122.23544599999997, 124.40786599999996),
+            new Point2D(122.23544599999997, 104.41818199999996),
+            new Point2D(122.23544599999997, 78.54111199999997),
+            new Point2D(122.23544599999997, 61.30780399999996),
+            new Point2D(151.08154399999995, 61.30780399999996),
+            new Point2D(174.22122799999997, 61.30780399999996),
+            new Point2D(197.22717199999994, 61.30780399999996),
+            new Point2D(211.68604999999997, 61.30780399999996),
+            new Point2D(234.550514, 61.30780399999996),
+            new Point2D(251.63372, 61.30780399999996),
+            new Point2D(263.00768600000004, 78.60920599999997),
+            new Point2D(263.00768600000004, 92.95437799999998),
+            new Point2D(263.00768600000004, 113.14857799999997),
+            new Point2D(263.00768600000004, 127.56612799999996),
+            new Point2D(263.00768600000004, 144.86959999999996),
+            new Point2D(294.74773400000015, 24.0),
+            new Point2D(311.8714400000002, 24.0),
+            new Point2D(328.99233800000013, 24.0),
+            new Point2D(349.16330000000016, 24.0),
+            new Point2D(366.2651720000002, 24.0),
+            new Point2D(383.5229960000001, 24.0),
+            new Point2D(400.72500200000013, 24.0),
+            new Point2D(417.97476200000006, 24.0),
+            new Point2D(438.3064820000001, 24.0),
+            new Point2D(464.1087440000001, 24.0),
+            new Point2D(515.7755119999999, 107.50795800000002),
+            new Point2D(541.8374960000001, 107.50795800000002),
+            new Point2D(784.1642380000001, 510.55332),
+            new Point2D(752.342776, 510.55332),
+            new Point2D(729.152494, 510.55332),
+            new Point2D(706.0279119999999, 510.55332),
+            new Point2D(680.1019719999999, 510.55332),
+            new Point2D(656.943568, 510.55332),
+            new Point2D(631.096882, 510.55332),
+            new Point2D(613.700332, 510.55332),
+            new Point2D(584.8805860000001, 510.55332),
+            new Point2D(558.8708200000001, 510.55332),
+            new Point2D(535.716592, 510.55332),
+            new Point2D(512.851408, 510.55332),
+            new Point2D(489.63903999999997, 510.55332),
+            new Point2D(466.47024999999996, 510.55332),
+            new Point2D(446.34977799999996, 510.55332),
+            new Point2D(423.34511200000003, 510.55332),
+            new Point2D(403.232542, 510.55332),
+            new Point2D(380.092408, 510.55332),
+            new Point2D(357.00064, 510.55332),
+            new Point2D(328.1868159999999, 510.55332),
+            new Point2D(302.4719259999998, 510.55332),
+            new Point2D(273.7200939999998, 510.55332),
+            new Point2D(247.8484419999998, 510.55332),
+            new Point2D(216.03842799999975, 510.55332),
+            new Point2D(190.10647599999976, 510.55332),
+            new Point2D(161.36760399999974, 510.55332),
+            new Point2D(135.45129399999976, 510.55332),
+            new Point2D(106.71216999999976, 510.55332),
+            new Point2D(80.79465399999975, 510.55332),
+            new Point2D(54.852405999999746, 510.55332),
+            new Point2D(34.80735399999975, 510.55332),
+            new Point2D(24.0, 510.55332)
+        };
+
+        for (Point2D c : blockCenters) {
+            addBlockAtCenter(c, blockW, blockH);
         }
     }
 
-    private void drawDebugObstacles() {
+    public void drawDebugObstacles() {
         container.getChildren().removeIf(n -> "debug".equals(n.getProperties().get("tag")));
+
         for (Obstacle ob : obstacles) {
             if (ob.visualRect != null) {
                 Rectangle rv = new Rectangle(
@@ -476,11 +676,79 @@ public class GameMapScreen {
             Rectangle rc = new Rectangle(
                     ob.collisionRect.getMinX(), ob.collisionRect.getMinY(),
                     ob.collisionRect.getWidth(), ob.collisionRect.getHeight());
-            rc.setFill(javafx.scene.paint.Color.rgb(255, 0, 0, 0.22));
-            rc.setStroke(javafx.scene.paint.Color.rgb(120, 0, 0, 0.6));
+            if (ob.type == ObstacleType.VILLAGE) {
+                rc.setFill(javafx.scene.paint.Color.rgb(255, 0, 0, 0.22));
+                rc.setStroke(javafx.scene.paint.Color.rgb(120, 0, 0, 0.6));
+            } else {
+                rc.setFill(javafx.scene.paint.Color.rgb(160, 0, 200, 0.28));
+                rc.setStroke(javafx.scene.paint.Color.rgb(120, 0, 120, 0.6));
+            }
             rc.getProperties().put("tag", "debug");
             rc.setMouseTransparent(true);
             container.getChildren().add(rc);
         }
+    }
+
+    private void enterVillage(Obstacle village) {
+        boolean isFieldVillage = village != null && "FIELD_VILLAGE".equals(village.id);
+
+        if (isFieldVillage) {
+            // guarda la posición actual del héroe para restaurarla al volver
+            final Point2D savedHeroTopLeft = getHeroMapTopLeft();
+
+            // para evitar inputs mientras cambiamos de pantalla
+            stopMapMusic();
+            try {
+                FXGL.getGameScene().removeUINode(root);
+            } catch (Throwable ignored) {
+            }
+
+            // crea la aldea y pásale un onExit que restaure el mapa y la posición del héroe
+            FieldVillage field = new FieldVillage(game);
+            field.showWithLoading(null, () -> {
+                // Restaurar mapa en el hilo de la UI
+                Platform.runLater(() -> {
+                    // volver a mostrar el mapa y la música
+                    MainScreen.hideMenu(); // opcional según tu flujo
+                    startMapMusic();
+                    try {
+                        FXGL.getGameScene().addUINode(root);
+                    } catch (Throwable ignored) {
+                    }
+                    // restaurar posición exacta del héroe
+                    heroView.setLayoutX(savedHeroTopLeft.getX());
+                    heroView.setLayoutY(savedHeroTopLeft.getY());
+                    // refrescar debug y foco
+                    drawDebugObstacles();
+                    root.requestFocus();
+                    mover.start();
+                });
+            });
+        } else {
+            Alert a = new Alert(Alert.AlertType.INFORMATION);
+            a.setTitle("Villa");
+            a.setHeaderText(null);
+            a.setContentText("Has interactuado con una villa");
+            a.showAndWait();
+        }
+    }
+
+    // Método público para que MainScreen o FieldVillage puedan fijar la posición del héroe
+    public void setHeroPosition(double x, double y) {
+        if (heroView != null) {
+            double hw = heroView.getBoundsInLocal().getWidth();
+            double hh = heroView.getBoundsInLocal().getHeight();
+            double nx = clamp(x, 0, mapW - hw);
+            double ny = clamp(y, 0, mapH - hh);
+            heroView.setLayoutX(nx);
+            heroView.setLayoutY(ny);
+            heroPositionInitialized = true;
+        }
+    }
+
+    // Forzar el centro (si quieres usar el centro como predeterminado)
+    public void resetHeroToCenter() {
+        heroPositionInitialized = false;
+        positionHeroCenter();
     }
 }
