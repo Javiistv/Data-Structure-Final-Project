@@ -28,18 +28,6 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import javafx.application.Platform;
 
-/**
- * InventoryScreen completo: - conserva todas las pestañas y métodos que tenías
- * - recibe una referencia a la pantalla que lo abrió (GameMapScreen o
- * FieldVillage u otro) - pausa todas las pistas registradas al abrirse
- * (AudioManager.pauseAll()) - reanuda las pistas al cerrarse
- * (AudioManager.resumeAll()) - bloquea inputs a la UI subyacente mientras está
- * abierto - guarda la posición del héroe usando getHeroMapTopLeft() si la
- * pantalla provee ese método
- *
- * Nota: este fichero asume que existe GUI.AudioManager con métodos pauseAll(),
- * resumeAll(), stopAll().
- */
 public class InventoryScreen {
 
     private final Game game;
@@ -53,19 +41,10 @@ public class InventoryScreen {
     private StackPane toastContainer;
     private boolean showingToast = false;
 
-    // Filtros globales para bloquear inputs a la UI subyacente mientras el inventario está abierto
     private EventHandler<KeyEvent> sceneKeyFilter = null;
     private EventHandler<MouseEvent> sceneMouseFilter = null;
     private Parent sceneRootRef = null;
 
-    /**
-     * Constructor.
-     *
-     * @param game instancia del juego (no null)
-     * @param mapScreen pantalla que abre el inventario (puede ser null). Debe
-     * exponer public Point2D getHeroMapTopLeft() si quieres que el inventario
-     * guarde la posición.
-     */
     public InventoryScreen(Game game, Object mapScreen) {
         this.game = game;
         this.mapScreen = mapScreen;
@@ -103,7 +82,7 @@ public class InventoryScreen {
                 + "-fx-border-color: #333344; "
                 + "-fx-border-width: 1;");
 
-        // Crear las pestañas (métodos completos más abajo)
+        // Crear las pestañas
         Tab statusTab = createStatusTab();
         Tab weaponsArmorTab = createWeaponsArmorTab();
         Tab waresTab = createWaresTab();
@@ -113,7 +92,7 @@ public class InventoryScreen {
         tabPane.getTabs().addAll(statusTab, weaponsArmorTab, waresTab, keyItemsTab, settingsTab);
 
         // Botón para cerrar
-        Button closeButton = new Button("Close (I / + / ESC)");
+        Button closeButton = new Button("Close");
         closeButton.setFont(Font.font("System Bold", 14));
         closeButton.setPrefSize(180, 40);
         closeButton.setStyle("-fx-background-color: linear-gradient(to bottom, #3a7bd5, #00d2ff); "
@@ -145,17 +124,14 @@ public class InventoryScreen {
         root.getChildren().add(mainContainer);
         StackPane.setAlignment(mainContainer, Pos.CENTER);
 
-        // Contenedor para mensajes toast
         toastContainer = new StackPane();
         toastContainer.setMouseTransparent(true);
         toastContainer.setPickOnBounds(false);
         root.getChildren().add(toastContainer);
 
-        // Asegurarse de que el root capte los eventos de teclado
         root.setFocusTraversable(true);
     }
 
-    // ---------------- UI tabs (implementaciones completas, conservadas) ----------------
     private Tab createStatusTab() {
         Tab tab = new Tab("Status");
         tab.setStyle("-fx-font-weight: bold;");
@@ -517,12 +493,10 @@ public class InventoryScreen {
                         h.setLastPosY(pos.getY());
                     }
                 } else {
-                    // Fallback: si no hay proveedor, intentar replicar comportamiento ESC guardando la posición actual del Game/Hero
                     try {
                         Hero h = game.getHero();
                         if (h != null) {
-                            // No cambiamos location si no sabemos el origen; dejamos la posición actual del héroe
-                            // (si tu Game expone la posición del héroe global, aquí puedes asignarla)
+
                         }
                     } catch (Throwable ignored) {
                     }
