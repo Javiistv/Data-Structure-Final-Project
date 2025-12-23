@@ -1,8 +1,7 @@
 package GUI;
 
 import Logic.Game;
-import Characters.Monster;
-import Characters.Hero;
+import Characters.*;
 import Items.Weapon;
 import com.almasb.fxgl.dsl.FXGL;
 import javafx.animation.FadeTransition;
@@ -34,15 +33,6 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Random;
 
-/**
- * CombatScreen completo con:
- * - constructor: CombatScreen(Game game, String bgPath, List<String> monsterSpritePaths, Hero heroForIcon)
- * - toasts secuenciales (no modales)
- * - música de combate configurable vía setBattleMusicPath(...)
- * - Game Over centrado que detiene la música previa
- * - createDebugMonster adaptado a la firma solicitada
- * - indicador de vida del héroe en esquina que se actualiza en tiempo real
- */
 public class CombatScreen {
 
     public final StackPane root;
@@ -60,8 +50,8 @@ public class CombatScreen {
     private final List<Monster> monsters = new ArrayList<>();
     private final List<ImageView> monsterViews = new ArrayList<>();
     private final Random rnd = new Random();
-
-    // Botones y selección por teclado
+    private final int origDefense;
+// Botones y selección por teclado
     private final List<Button> buttons = new ArrayList<>();
     private int selectedButtonIndex = 0;
 
@@ -86,16 +76,9 @@ public class CombatScreen {
     // Label para mostrar vida del héroe (actual / total)
     private final Label heroHpLabel = new Label();
 
-    /**
-     * Constructor principal.
-     *
-     * @param game instancia del juego (no nula según tu implementación)
-     * @param bgPath ruta del fondo (ej: "/Resources/textures/battle_bg.png")
-     * @param monsterSpritePaths lista de rutas de sprites para elegir aleatoriamente
-     * @param heroForIcon héroe para usar su imagen en el icono (puede ser null)
-     */
-    public CombatScreen(Game game, String bgPath, List<String> monsterSpritePaths, Hero heroForIcon) {
+    public CombatScreen(Game game, String bgPath, String encounter, Hero heroForIcon) {
         this.game = game;
+        origDefense = game.getHero().getDefense();
 
         root = new StackPane();
         root.setPrefSize(800, 600);
@@ -114,7 +97,6 @@ public class CombatScreen {
         content = new Pane();
         content.setPrefSize(800, 600);
 
-        // Paneles: left (hero), center (spacer), right (monsters)
         leftPane = new Pane();
         leftPane.setPrefSize(220, 600);
         leftPane.setLayoutX(0);
@@ -125,13 +107,11 @@ public class CombatScreen {
         centerPane.setLayoutX(220);
         centerPane.setLayoutY(0);
 
-        // Mover rightPane más cerca del centro para que los monstruos no se salgan
         rightPane = new Pane();
         rightPane.setPrefSize(220, 600);
         rightPane.setLayoutX(520);
         rightPane.setLayoutY(0);
 
-        // Monstruos: fila dentro del rightPane, alineada al centro
         monstersBox = new HBox(8);
         monstersBox.setAlignment(Pos.CENTER);
         monstersBox.setPrefWidth(200);
@@ -139,7 +119,6 @@ public class CombatScreen {
         monstersBox.setLayoutY(120);
         rightPane.getChildren().add(monstersBox);
 
-        // Panel inferior oscuro
         Rectangle bottomPanel = new Rectangle(800, 96, Color.rgb(10, 10, 10, 0.86));
         bottomPanel.setLayoutX(0);
         bottomPanel.setLayoutY(504);
@@ -154,18 +133,16 @@ public class CombatScreen {
         content.getChildren().addAll(backgroundView, leftPane, centerPane, rightPane, bottomPanel, actionButtons);
         root.getChildren().add(content);
 
-        // Héroe: icono fijo, centrado verticalmente dentro de leftPane
         createHeroIcon(heroForIcon);
 
         // Hero HP label: esquina superior derecha
         setupHeroHpLabel();
 
-        // Generar entre 1 y 3 monstruos y colocarlos en monstersBox (fila, alineados al centro)
+        // Generar entre 1 y 3 monstruos y colocarlos en monstersBox
         int count = 1 + rnd.nextInt(3);
         int i = 0;
         while (i < count) {
-            String sprite = chooseRandomSprite(monsterSpritePaths);
-            Monster m = createDebugMonster(sprite, "Monstruo " + (i + 1));
+            Monster m = foundMonster(encounter);
             monsters.add(m);
             ImageView mv = createMonsterView(m);
             monsterViews.add(mv);
@@ -204,12 +181,6 @@ public class CombatScreen {
         Platform.runLater(() -> root.requestFocus());
     }
 
-    /**
-     * Setter público para que otras clases (por ejemplo GameMapScreen) puedan
-     * cambiar la ruta de la música de combate antes de mostrar la pantalla.
-     *
-     * @param path ruta a usar (puede ser absoluta o recurso en classpath)
-     */
     public void setBattleMusicPath(String path) {
         if (path != null && !path.isBlank()) {
             this.battleMusicPath = path;
@@ -242,45 +213,24 @@ public class CombatScreen {
         });
     }
 
-    private String chooseRandomSprite(List<String> paths) {
-        String out = "/Resources/sprites/Monsters/monster1.png";
-        if (paths != null && !paths.isEmpty()) {
-            int idx = rnd.nextInt(paths.size());
-            if (idx >= 0 && idx < paths.size()) {
-                out = paths.get(idx);
+    private Monster foundMonster(String encounter) {
+        Monster m = null;
+        boolean found = false;
+        while (!found) {
+            for (int i = 0; i < game.getCharacters().size() && !found; i++) {
+                NPC n = game.getCharacters().get(i);
+                if (n instanceof Monster) {
+                    if (((Monster) n).getEncounter().equalsIgnoreCase(encounter)) {
+                        if (rnd.nextInt(0, 10) == 7) {
+                            Monster t = (Monster) n;
+                            m = new Monster(t.getActualWeapon(), t.getAttack(), t.getMagic(), t.getDefense(), t.getVelocidad(), t.getLevel(), t.getName(),
+                                    t.getSpritePath(), t.getLife(), t.getActualLife(), t.getExp(), t.getEncounter());
+                            found = true;
+                        }
+                    }
+                }
             }
         }
-        return out;
-    }
-
-    /**
-     * Método solicitado: constructor de Monster con la firma que pediste.
-     */
-    private Monster createDebugMonster(String spritePath, String name) {
-        Weapon w = null;
-        int idx = 0;
-        int itemsSize = game.getItems().size();
-        boolean foundWeapon = false;
-        while (idx < itemsSize && !foundWeapon) {
-            Object it = game.getItems().get(idx);
-            if (it instanceof Weapon) {
-                w = (Weapon) it;
-                foundWeapon = true;
-            }
-            idx = idx + 1;
-        }
-
-        int attack = 4;
-        int magic = 0;
-        int defense = 1;
-        int velocidad = 6;
-        int level = 1;
-        int life = 12;
-        int actualLife = 12;
-
-        // Constructor que pediste (sin Classes)
-        Monster m = new Monster(w, attack, magic, defense, velocidad, level, name, spritePath, life, actualLife);
-
         return m;
     }
 
@@ -289,12 +239,6 @@ public class CombatScreen {
         try {
             img = m.getFxImage();
         } catch (Throwable ignored) {
-        }
-        if (img == null) {
-            try {
-                img = new Image(getClass().getResourceAsStream("/Resources/sprites/Monsters/monster1.png"));
-            } catch (Throwable ignored) {
-            }
         }
         ImageView iv = new ImageView(img);
         iv.setPreserveRatio(true);
@@ -320,7 +264,7 @@ public class CombatScreen {
         }
         if (heroImg == null) {
             try {
-                heroImg = new Image(getClass().getResourceAsStream("/Resources/sprites/hero.png"));
+                heroImg = new Image(getClass().getResourceAsStream(game.getHero().getSpritePath()));
             } catch (Throwable ignored) {
             }
         }
@@ -359,23 +303,29 @@ public class CombatScreen {
 
         bBattle.setOnAction(e -> {
             if (!gameOverActive) {
+                game.getHero().setDefense(origDefense);
                 onBattle();
             }
         });
         bItem.setOnAction(e -> {
             if (!gameOverActive) {
+                game.getHero().setDefense(origDefense);
                 toastQueue.enqueue("Item: acción ejecutada correctamente.");
                 monstersAttackAfterHeroAction();
             }
         });
         bDefend.setOnAction(e -> {
             if (!gameOverActive) {
-                toastQueue.enqueue("Defend: acción ejecutada correctamente.");
+                game.getHero().setDefense(origDefense);
+                Hero h = game.getHero();
+                h.setDefense(h.getDefense() + rnd.nextInt(0, 10));
+                toastQueue.enqueue("The Defense has augmented in this turn.Now it is:" + String.valueOf(h.getDefense()));
                 monstersAttackAfterHeroAction();
             }
         });
         bEscape.setOnAction(e -> {
             if (!gameOverActive) {
+                game.getHero().setDefense(origDefense);
                 closeCombatAndReturnToMap();
             }
         });
@@ -471,14 +421,13 @@ public class CombatScreen {
         }
     }
 
-    // --- acciones de combate y flujo ---
+    // acciones de combate  
     private void onBattle() {
         boolean hadTarget = false;
         Monster target = null;
         int tIndex = 0;
         int monstersCount = monsters.size();
 
-        // Buscar primer monstruo vivo (sin break)
         while (tIndex < monstersCount && !hadTarget) {
             Monster m = monsters.get(tIndex);
             if (m.getActualLife() > 0) {
@@ -499,14 +448,15 @@ public class CombatScreen {
             final Monster finalTarget = target;
             final boolean finalHeroDidDamage = heroDidDamage;
             String heroMsg = finalHeroDidDamage
-                    ? ("Has atacado a " + finalTarget.getName() + ". Vida restante del monstruo: " + finalTarget.getActualLife())
-                    : "Tu ataque no hizo daño.";
+                    ? ("You attacked " + finalTarget.getName() + ". Monster's remaining life: " + finalTarget.getActualLife())
+                    : "Your attack didn't damaged any monster.";
             toastQueue.enqueue(heroMsg);
-            updateHeroHpDisplay(); // por si alguna acción del héroe afecta visualmente
+            updateHeroHpDisplay();
         }
 
         boolean removedOne = false;
         if (!endCombatNow && target != null && game.checkGameOver(target.getActualLife())) {
+            game.getHero().sumExp(target.getExp());
             removeMonster(target);
             removedOne = true;
         }
@@ -518,11 +468,23 @@ public class CombatScreen {
         }
 
         if (endCombatNow) {
+            boolean leveled = game.getHero().levelUp();
+            if (leveled) {
+                String alert = "You have leveled up! Now You Are level" + String.valueOf(game.getHero().getLevel());
+                toastQueue.enqueue(alert);
+            }
+            restoreMonstersHealth();
             endCombatAndReturnToMap();
-            return;
         }
+        if (!endCombatNow) {
+            monstersAttackAfterHeroAction();
+        }
+    }
 
-        monstersAttackAfterHeroAction();
+    private void restoreMonstersHealth() {
+        for (Monster m : monsters) {
+            m.setActualLife(m.getLife());
+        }
     }
 
     private void monstersAttackAfterHeroAction() {
@@ -537,8 +499,8 @@ public class CombatScreen {
                 boolean monsterDidDamage = game.combat(m);
                 int heroHp = game.getHero().getActualLife();
                 final String msg = monsterDidDamage
-                        ? (m.getName() + " atacó. Vida restante del héroe: " + heroHp)
-                        : (m.getName() + " atacó pero no hizo daño. Vida del héroe: " + heroHp);
+                        ? (m.getName() + " Atacó. Vida restante del héroe: " + heroHp)
+                        : (m.getName() + " Atacó pero no hizo daño. Vida del héroe: " + heroHp);
 
                 // Encolar toast y actualizar HP display inmediatamente después del ataque
                 toastQueue.enqueue(msg);
@@ -672,7 +634,7 @@ public class CombatScreen {
         }
     }
 
-    // --- Música de combate (usa battleMusicPath configurable) ---
+// Musica
     private void playBattleMusic() {
         try {
             stopBattleMusic();
@@ -684,7 +646,7 @@ public class CombatScreen {
                 battleMusic.setVolume(MainScreen.getVolumeSetting());
                 battleMusic.play();
             } else {
-                // Si no es recurso en classpath, intentar como URL/archivo directo
+
                 try {
                     Media media = new Media(battleMusicPath);
                     battleMusic = new MediaPlayer(media);
@@ -723,7 +685,6 @@ public class CombatScreen {
         });
     }
 
-    // --- ToastQueue: muestra labels temporales en orden, uno a la vez ---
     private class ToastQueue {
 
         private final Queue<String> q = new ArrayDeque<>();
