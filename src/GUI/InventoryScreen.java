@@ -26,6 +26,7 @@ import javafx.scene.text.Font;
 import javafx.util.Duration;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import javafx.application.Platform;
 
 public class InventoryScreen {
@@ -408,9 +409,8 @@ public class InventoryScreen {
         VBox waresList = new VBox(5);
         waresList.setStyle("-fx-background-color: transparent;");
 
-        // Get consumables from game (not hero's items)
         int healingItems = 0;
-        ArrayList<Item> allItems = game.getItems();
+        LinkedList<Item> allItems = game.getHero().getItems();
         for (Item item : allItems) {
             if (item instanceof Wares) {
                 healingItems++;
@@ -566,7 +566,6 @@ public class InventoryScreen {
         volumeControls.getChildren().addAll(volumeSlider, volumeValue);
         volumeSection.getChildren().addAll(volumeLabel, volumeControls);
 
-        // Exit to menu button - AHORA CIERRA TODO COMPLETAMENTE Y DETIENE MÚSICA DE MAPA (si mapScreen != null)
         VBox exitSection = new VBox(10);
         exitSection.setAlignment(Pos.CENTER);
         Label exitLabel = new Label("Exit to Main Menu");
@@ -581,7 +580,7 @@ public class InventoryScreen {
                 + "-fx-background-radius: 8; -fx-effect: dropshadow(gaussian, #333, 5, 0, 0, 2); "
                 + "-fx-cursor: hand;");
         exitButton.setOnAction(e -> {
-            // 1. Quitar filtros globales del inventario si están instalados
+
             try {
                 Parent currentRoot = FXGL.getGameScene().getRoot();
                 if (sceneRootRef != null) {
@@ -607,13 +606,10 @@ public class InventoryScreen {
             } catch (Throwable ignored) {
             }
 
-            // 2. Cerrar el inventario UI si está presente
             try {
                 FXGL.getGameScene().removeUINode(root);
             } catch (Throwable ignored) {
             }
-
-            // 3. Intentar detener la música del mapa si existe (invocación segura por reflexión)
             try {
                 if (mapScreen != null) {
                     try {
@@ -631,13 +627,11 @@ public class InventoryScreen {
             } catch (Throwable ignored) {
             }
 
-            // 4. Detener y limpiar toda la música registrada (AudioManager)
             try {
                 AudioManager.stopAll();
             } catch (Throwable ignored) {
             }
 
-            // 5. Limpiar UI y restaurar menú y música principal
             try {
                 FXGL.getGameScene().clearUINodes();
             } catch (Throwable ignored) {

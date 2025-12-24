@@ -100,7 +100,6 @@ public class GameMapScreen {
     // Flag para mostrar/ocultar rectángulos de colisión (debug)
     private boolean debugEnabled = false;
 
-    // Random para usos de debug (por ejemplo abrir combate con número aleatorio de monstruos)
     private final Random rnd = new Random();
 
     public GameMapScreen(Game game) {
@@ -890,7 +889,7 @@ public class GameMapScreen {
         String bg = "/Resources/textures/Battle/fieldBattle.png";
         stopMapMusic();
 
-        GUI.CombatScreen cs = new GUI.CombatScreen(game, bg, "Overworld", game.getHero());
+        GUI.CombatScreen cs = new GUI.CombatScreen(game, bg, "Swamp", game.getHero());
 
         cs.setBattleMusicPath(combatMusicPath);
         //cs.setBattleMusicPath("/Resources/music/bossBattle2.mp3");

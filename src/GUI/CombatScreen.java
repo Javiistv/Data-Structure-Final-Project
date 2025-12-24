@@ -224,7 +224,7 @@ public class CombatScreen {
                         if (rnd.nextInt(0, 10) == 7) {
                             Monster t = (Monster) n;
                             m = new Monster(t.getActualWeapon(), t.getAttack(), t.getDefense(), t.getName(),
-                                    t.getSpritePath(), t.getLife(), t.getActualLife(), t.getExp(),t.getMoney(), t.getEncounter());
+                                    t.getSpritePath(), t.getLife(), t.getActualLife(), t.getExp(), t.getMoney(), t.getEncounter());
                             found = true;
                         }
                     }
@@ -319,7 +319,7 @@ public class CombatScreen {
                 game.getHero().setDefense(origDefense);
                 Hero h = game.getHero();
                 h.setDefense(h.getDefense() + rnd.nextInt(0, 10));
-                toastQueue.enqueue("The Defense has augmented in this turn.Now it is:" + String.valueOf(h.getDefense()));
+                toastQueue.enqueue("The Defense has augmented in this turn. Now it has a value of: " + String.valueOf(h.getDefense()));
                 monstersAttackAfterHeroAction();
             }
         });
@@ -373,7 +373,6 @@ public class CombatScreen {
                 }
                 return;
             }
-            
 
             if (code == KeyCode.DIGIT1 || code == KeyCode.NUMPAD1) {
                 ev.consume();
@@ -401,7 +400,7 @@ public class CombatScreen {
                 }
                 return;
             }
-          
+
         });
     }
 
@@ -454,7 +453,7 @@ public class CombatScreen {
         boolean removedOne = false;
         if (!endCombatNow && target != null && game.checkGameOver(target.getActualLife())) {
             game.getHero().sumExp(target.getExp());
-            game.getHero().setMoney( game.getHero().getMoney()+target.getMoney());
+            game.getHero().setMoney(game.getHero().getMoney() + target.getMoney());
             removeMonster(target);
             removedOne = true;
         }
@@ -471,17 +470,10 @@ public class CombatScreen {
                 String alert = "You have leveled up! Now You Are level" + String.valueOf(game.getHero().getLevel());
                 toastQueue.enqueue(alert);
             }
-            restoreMonstersHealth();
             endCombatAndReturnToMap();
         }
         if (!endCombatNow) {
             monstersAttackAfterHeroAction();
-        }
-    }
-
-    private void restoreMonstersHealth() {
-        for (Monster m : monsters) {
-            m.setActualLife(m.getLife());
         }
     }
 
@@ -497,10 +489,8 @@ public class CombatScreen {
                 boolean monsterDidDamage = game.combat(m);
                 int heroHp = game.getHero().getActualLife();
                 final String msg = monsterDidDamage
-                        ? (m.getName() + " Atacó. Vida restante del héroe: " + heroHp)
-                        : (m.getName() + " Atacó pero no hizo daño. Vida del héroe: " + heroHp);
-
-                // Encolar toast y actualizar HP display inmediatamente después del ataque
+                        ? (m.getName() + " Attacked, your life has decreased!")
+                        : (m.getName() + " Attacked but didn't damaged!");
                 toastQueue.enqueue(msg);
                 updateHeroHpDisplay();
 
@@ -544,7 +534,7 @@ public class CombatScreen {
         endCombatAndReturnToMap();
     }
 
-    // --- Game Over ---
+    // Game Over
     private void showGameOver() {
         Platform.runLater(() -> {
             if (gameOverOverlay != null) {

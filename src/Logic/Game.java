@@ -281,7 +281,7 @@ public class Game {
     public void createItems() {
         items.add(new Fist("Your hands, it is the easiest way to attack!", "Bare Hands", "H000", 5, 120000, "Inflicts damage."));
         items.add(new Sword("Basic Sword made of old trees.", "Wooden Sword", "SW000", 9, 120000, "Hard but cuts"));
-        items.add(new Fist("Basic thrown magic with hands", "Basic Spell", "H001", 6, 10, "It can attack"));
+        items.add(new Spell("Basic thrown magic with hands", "Basic Spell", "H001", 6, 10, "It can attack"));
         items.add(new Gun("It shoots.", "Desert Eagle", "GUN01", 20, 100, "Inflict damage.",
                 "A", 50.0));
         items.add(new Sword("It cuts.", "Guardian Sword", "SW01", 30, 100, "Inflict damage."));
@@ -291,7 +291,7 @@ public class Game {
         items.add(new Armor("Basic Armor", "Broken Cloath", "A000", 5, "Offers extra Defense"));
         items.add(new Fist("Monster Claws to scratch the enemy", "Claws", "H002", 13, 120000, "Inflicts damage by scratching."));
         items.add(new Spear("A punzanct surface weapon", "Spike", "SP001", 6, 2, "It can hurt a bit more on some attacks"));
-        items.add(new Fist("Dark magic spells", "Basic Spell", "H003", 6, 10, "It can attack launching shadow balls"));
+        items.add(new Spell("Dark magic spells", "Basic Spell", "H003", 6, 10, "It can attack launching shadow balls"));
 
     }
 
@@ -331,6 +331,12 @@ public class Game {
                 new HalberdUserClass("Hits using a halberd.", false, "halberd"));
         BinaryTreeNode<Classes> pikeUser = new BinaryTreeNode<>(
                 new PikeUserClass("Hits using a pike.", false, "pike"));
+        BinaryTreeNode<Classes> Magician = new BinaryTreeNode<>(
+                new PikeUserClass("Hits using spells.", false, "spell"));
+        BinaryTreeNode<Classes> wands = new BinaryTreeNode<>(
+                new PikeUserClass("Hits using spells with wands", false, "wand"));
+        BinaryTreeNode<Classes> healing = new BinaryTreeNode<>(
+                new PikeUserClass("Lets you heal", false, "healingSpell"));
 
         classes.setRoot(warrior);
 
@@ -345,6 +351,11 @@ public class Game {
         classes.insertNode(gunner, warrior);
         classes.insertAsFirstSon(shotgunUser, gunner);
         classes.insertNode(rifleUser, gunner);
+
+        classes.insertNode(Magician, warrior);
+        classes.insertAsFirstSon(wands, Magician);
+        classes.insertNode(healing, Magician);
+
     }
 
 }

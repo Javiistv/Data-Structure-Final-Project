@@ -115,7 +115,6 @@ public class FieldVillage {
         });
     }
 
-    // ---------------- public API ----------------
     public StackPane getRoot() {
         return root;
     }
@@ -134,7 +133,6 @@ public class FieldVillage {
             boolean imageOk = loadBackgroundImage("/Resources/textures/fieldVillage/fieldVillage.png");
             boolean musicOk = startVillageMusic("/Resources/music/fieldVillage.mp3");
 
-            // Primero poblar colisiones
             populateVillageObstacles();
 
             // Luego posicionar al héroe
