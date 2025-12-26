@@ -43,7 +43,7 @@ public class Hero implements Serializable {
     private double lastPosX = 0.0;
     private double lastPosY = 0.0;
 
-    public Hero(String name, Weapon weapon, Armor armor, BinaryTreeNode<Classes> root) {
+    public Hero(String name, Weapon weapon, Armor armor, Classes root) {
         setName(name);
         setLife(150);
         setActualLife(100);
@@ -58,7 +58,8 @@ public class Hero implements Serializable {
         setMoney(50);
         items = new LinkedList<>();
         actualWeapon = weapon;
-        unlockedClasses = new GeneralTree<>(root);
+        BinaryTreeNode<Classes> heroRoot = new BinaryTreeNode<>(root);
+        unlockedClasses = new GeneralTree<>(heroRoot);
         tasks = new ArrayDeque<>();
         completedTasks = new ArrayDeque<>();
         loadFxImage();

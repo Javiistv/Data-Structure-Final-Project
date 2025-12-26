@@ -4,6 +4,8 @@ import Runner.MainScreen;
 import Characters.Hero;
 import GUI.Swamp;
 import Logic.Game;
+import Misc.Classes;
+import Tree.InBreadthIterator;
 import com.almasb.fxgl.dsl.FXGL;
 import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
@@ -320,6 +322,13 @@ public class GameMapScreen {
                 right = true;
             } else if (k == KeyCode.L) {
                 enterDebugSwamp();
+            }
+            else if (k == KeyCode.Q) {
+                InBreadthIterator<Classes> it = game.getHero().getUnlockedClasses().inBreadthIterator();
+                while(it.hasNext()){
+                    System.out.println(it.nextNode().getInfo().getClass().getSimpleName());
+                    
+                }
             }
 
             if (handled) {
