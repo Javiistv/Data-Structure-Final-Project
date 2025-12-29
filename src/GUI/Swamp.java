@@ -1819,9 +1819,9 @@ public class Swamp {
         String bg = "/Resources/textures/Battle/swampBattle.png";
         stopMapMusic();
 
-        GUI.CombatScreen cs = new GUI.CombatScreen(game, bg, "Swamp", game.getHero());
+        GUI.CombatScreen cs = new GUI.CombatScreen(game, bg, "Swamp", game.getHero(), false, null);
 
-        cs.setBattleMusicPath("/Resources/music/bossBattle2.mp3");
+        cs.setBattleMusicPath("/Resources/music/fieldBattle.mp3");
 
         cs.setOnExit(() -> {
             Platform.runLater(() -> {

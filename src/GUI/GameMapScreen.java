@@ -931,7 +931,7 @@ public class GameMapScreen {
         String bg = "/Resources/textures/Battle/fieldBattle.png";
         stopMapMusic();
 
-        GUI.CombatScreen cs = new GUI.CombatScreen(game, bg, "Overworld", game.getHero());
+        GUI.CombatScreen cs = new GUI.CombatScreen(game, bg, "Overworld", game.getHero(), false, null);
 
         cs.setBattleMusicPath(combatMusicPath);
         //cs.setBattleMusicPath("/Resources/music/bossBattle2.mp3");

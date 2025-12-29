@@ -1,5 +1,6 @@
 package GUI;
 
+import Characters.Boss;
 import Characters.Hero;
 import Logic.Game;
 import Runner.MainScreen;
@@ -17,6 +18,7 @@ import javafx.application.Platform;
 import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
+import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.image.Image;
@@ -59,7 +61,9 @@ public class SwampDungeon {
     private final Game game;
     // Para cambiar de mapa en el mismo pantano
     private final List<Rectangle> dungeonTriggerRects = new ArrayList<>();
+    private final List<Rectangle> bossTriggerRects = new ArrayList<>();
     private boolean beforeDungeon = true;
+    private ImageView bossView;
 
     // Sistema de colisiones
     private final List<Obstacle> obstacles = new ArrayList<>();
@@ -652,6 +656,28 @@ public class SwampDungeon {
             ));
             idx++;
         }
+        if (!game.getHero().existsCompletedTask(game.getTasks().get(3))) {
+            double[][] COLLISIONS2 = new double[][]{
+                {645.0170220000001, 332.0898660000009},
+                {607.6962720000002, 332.0898660000009},
+                {581.6617560000003, 332.0898660000009},
+                {550.1667780000002, 332.0898660000009},
+                {524.3238360000001, 332.0898660000009},
+                {501.2223300000002, 332.0898660000009}
+            };
+
+            for (double[] p : COLLISIONS2) {
+                double x = p[0];
+                double y = p[1];
+                obstacles.add(new Obstacle(
+                        new Rectangle2D(x, y, 30, 30),
+                        ObstacleType.PLANT,
+                        "Colision" + idx
+                ));
+                idx++;
+            }
+
+        }
 
     }
 
@@ -715,6 +741,61 @@ public class SwampDungeon {
         heroView.toFront();
     }
 
+    private void checkBossTriggers() {
+        boolean combat = false;
+
+        if (bossView != null) {
+            double hx = heroView.getLayoutX();
+            double hy = heroView.getLayoutY();
+            Rectangle2D heroRect = new Rectangle2D(hx, hy, HERO_W, HERO_H);
+
+            for (Rectangle trigger : bossTriggerRects) {
+                Rectangle2D tr = new Rectangle2D(trigger.getX(), trigger.getY(), trigger.getWidth(), trigger.getHeight());
+                if (heroRect.intersects(tr)) {
+                    combat = true;
+                }
+            }
+        }
+
+        if (combat) {
+            battleAgainstBoss((Boss)game.getCharacters().get(12));
+        }
+    }
+
+    private void battleAgainstBoss(Boss boss) {
+        String bg = "/Resources/textures/Battle/swampBattle.png";
+        stopMapMusic();
+
+        CombatScreen cs = new GUI.CombatScreen(game, bg, "Swamp", game.getHero(),true, boss);
+
+        cs.setBattleMusicPath("/Resources/music/bossBattle1.mp3");
+
+        cs.setOnExit(() -> {
+            Platform.runLater(() -> {
+                try {
+                    FXGL.getGameScene().removeUINode(cs.root);
+                } catch (Throwable ignored) {
+                }
+                try {
+                    FXGL.getGameScene().addUINode(root);
+                } catch (Throwable ignored) {
+                }
+                startMapMusic();
+                root.requestFocus();
+            });
+        });
+
+        Platform.runLater(() -> {
+            try {
+                FXGL.getGameScene().removeUINode(root);
+            } catch (Throwable ignored) {
+            }
+            cs.show();
+        });
+        game.completeMainQ003();
+
+    }
+
     private void installInputHandlers() {
         root.addEventFilter(KeyEvent.KEY_PRESSED, ev -> {
             KeyCode k = ev.getCode();
@@ -755,7 +836,9 @@ public class SwampDungeon {
             }
 
             if (k == KeyCode.ENTER) {
-                if (beforeDungeon) {
+                if (bossView != null) {
+                    checkBossTriggers();
+                } else if (beforeDungeon) {
                     checkDungeonTriggers();
 
                     if (onStartRect) {
@@ -1122,9 +1205,9 @@ public class SwampDungeon {
         String bg = "/Resources/textures/Battle/swampBattle.png";
         stopMapMusic();
 
-        GUI.CombatScreen cs = new GUI.CombatScreen(game, bg, "Swamp", game.getHero());
+        GUI.CombatScreen cs = new GUI.CombatScreen(game, bg, "Swamp", game.getHero(), false, null);
 
-        cs.setBattleMusicPath("/Resources/music/bossBattle2.mp3");
+        cs.setBattleMusicPath("/Resources/music/fieldBattle.mp3");
 
         cs.setOnExit(() -> {
             Platform.runLater(() -> {
@@ -1234,6 +1317,7 @@ public class SwampDungeon {
             }
 
             boolean bgOk = loadBackgroundImage("/Resources/textures/SwampDungeon/SwampDungeon02.png");
+            drawBossDungeon();
             setHeroPosition(382.9433579999997, 1126.7086680000002);
 
             if (!world.getChildren().contains(heroView)) {
@@ -1241,6 +1325,7 @@ public class SwampDungeon {
             }
             heroView.toFront();
             createReturnTriggerRect();
+            createBossTriggerRects();
 
             updateCamera();
         }
@@ -1321,6 +1406,87 @@ public class SwampDungeon {
 
         if (found && foundTrigger != null) {
             returnToPreviousZone();
+        }
+    }
+
+    public void drawBossDungeon() {
+        if (!game.getHero().existsCompletedTask(game.getTasks().get(3))) {
+            if (bossView != null) {
+                if (!world.getChildren().contains(bossView)) {
+                    world.getChildren().add(bossView);
+                }
+                bossView.toFront();
+                return;
+            }
+
+            try {
+                Image img = new Image(getClass().getResourceAsStream("/Resources/sprites/Monsters/swampBoss01.png"));
+                bossView = new ImageView(img);
+
+                bossView.setPreserveRatio(true);
+                bossView.setFitWidth(200);
+                bossView.setFitHeight(200);
+                bossView.setMouseTransparent(true);
+
+                bossView.setLayoutX(512.5474079999998);
+                bossView.setLayoutY(243.2034720000001);
+
+                bossView.getProperties().put("tag", "swamp_boss");
+
+                if (!world.getChildren().contains(bossView)) {
+                    world.getChildren().add(bossView);
+                }
+                bossView.toFront();
+
+            } catch (Throwable t) {
+                System.err.println("No se pudo cargar la imagen del boss: " + t.getMessage());
+            }
+
+        } else {
+            if (bossView != null) {
+                try {
+                    world.getChildren().remove(bossView);
+                } catch (Throwable ignored) {
+                }
+                bossView = null;
+            }
+        }
+    }
+
+    private void createBossTriggerRects() {
+        if (!game.getHero().existsCompletedTask(game.getTasks().get(3))) {
+            for (Rectangle r : bossTriggerRects) {
+                try {
+                    world.getChildren().remove(r);
+                } catch (Throwable ignored) {
+                }
+            }
+            bossTriggerRects.clear();
+
+            double[][] TRIGGERS = new double[][]{
+                {527.8152960000003, 364.2732719999998},
+                {559.3640940000006, 364.2732719999998},
+                {593.9372700000007, 364.2732719999998},
+                {602.5033080000007, 364.2732719999998}
+            };
+
+            for (int i = 0; i < TRIGGERS.length; i++) {
+                double x = TRIGGERS[i][0];
+                double y = TRIGGERS[i][1];
+                double w = HERO_W + 8;
+                double h = HERO_H + 8;
+                Rectangle r = new Rectangle(x - 4, y - 4, w, h);
+                r.setFill(Color.color(0, 0, 0, 0.0));
+                r.setStroke(null);
+                r.setMouseTransparent(true);
+                r.getProperties().put("tag", "boss_trigger");
+                r.getProperties().put("id", "bossTRigger" + (i + 1));
+                bossTriggerRects.add(r);
+                if (!world.getChildren().contains(r)) {
+                    world.getChildren().add(r);
+                }
+            }
+            heroView.toFront();
         }
     }
 

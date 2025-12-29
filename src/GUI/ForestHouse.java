@@ -826,6 +826,53 @@ public class ForestHouse {
                 }
             }
 
+            if (k == KeyCode.ESCAPE) {
+                clearInputState();
+
+                Alert dlg = new Alert(Alert.AlertType.CONFIRMATION);
+                dlg.setTitle("Volver al menú");
+                dlg.setHeaderText("¿Quieres volver al menú principal?");
+                dlg.setContentText("Si vuelves al menú, la partida seguirá guardada en disco.");
+                try {
+                    if (root.getScene() != null && root.getScene().getWindow() != null) {
+                        dlg.initOwner(root.getScene().getWindow());
+                    }
+                } catch (Throwable ignored) {
+                }
+                dlg.setOnHidden(eh -> {
+                    clearInputState();
+                    Platform.runLater(root::requestFocus);
+                });
+
+                Optional<ButtonType> opt = dlg.showAndWait();
+                boolean ok = opt.isPresent() && opt.get() == ButtonType.OK;
+                if (ok) {
+                    try {
+                        if (game != null && game.getHero() != null) {
+                            Hero h = game.getHero();
+                            h.setLastLocation(Hero.Location.FOREST_HOUSE);
+                            h.setLastPosY(heroView.getLayoutY());
+                            h.setLastPosX(heroView.getLayoutX());
+                            try {
+                                game.createSaveGame();
+                            } catch (Throwable ignored) {
+                            }
+                        }
+                    } catch (Throwable ignored) {
+                    }
+
+                    stopVillageMusic();
+                    try {
+                        FXGL.getGameScene().removeUINode(root);
+                    } catch (Throwable ignored) {
+                    }
+                    MainScreen.restoreMenuAndMusic();
+                } else {
+                    clearInputState();
+                    Platform.runLater(root::requestFocus);
+                }
+            }
+
             ev.consume();
         });
 
@@ -1147,7 +1194,7 @@ public class ForestHouse {
         loadBackgroundImage("/Resources/textures/forestHouse/1stFloorForestHouse.png");// cambiando fondo
 
         stopVillageMusic();
-        startVillageMusic("/Resources/music/interiorOST.mp3");
+        startVillageMusic("/Resources/music/interiorOST.mp3");//camniar musica
         if (entranceHouse) {
             setHeroPosition(411.0, 576.0); //poisiconar heroe
         } else {

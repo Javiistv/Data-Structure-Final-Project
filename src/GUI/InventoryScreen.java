@@ -503,6 +503,21 @@ public class InventoryScreen {
                             h.setLastPosY(864.0);
                             h.setLastLocation(Hero.Location.FIELD_VILLAGE);
                         }
+                        case "JVInn" -> {
+                            h.setLastPosX(670.5704519999998);
+                            h.setLastPosY(864.0);
+                            h.setLastLocation(Hero.Location.FIELD_VILLAGE);
+                        }
+                        case "JVMayor" -> {
+                            h.setLastPosX(670.5704519999998);
+                            h.setLastPosY(864.0);
+                            h.setLastLocation(Hero.Location.FIELD_VILLAGE);
+                        }
+                        case "JVStore" -> {
+                            h.setLastPosX(670.5704519999998);
+                            h.setLastPosY(864.0);
+                            h.setLastLocation(Hero.Location.FIELD_VILLAGE);
+                        }
                         case "GameMapScreen" ->{
                             h.setLastPosX(682.4067800000003);
                             h.setLastPosY(400.5119300000001);
