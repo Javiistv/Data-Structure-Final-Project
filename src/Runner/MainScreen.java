@@ -59,6 +59,7 @@ public class MainScreen extends GameApplication {
     private static final double CURSOR_UP_OFFSET = 8.0;
     private GameMapScreen currentMapScreen;
     private static final int DURACION_CARGA_MS = 600;
+    public static volatile boolean modalOpen = false;
 
     @Override
     protected void initSettings(GameSettings settings) {
@@ -70,39 +71,44 @@ public class MainScreen extends GameApplication {
     @Override
     protected void initInput() {
         FXGL.onKeyDown(KeyCode.UP, () -> {
-            if (configOpen) {
-                return;
+            boolean proceed = !MainScreen.isModalOpen() && !configOpen;
+            if (proceed) {
+                selectedIndex = (selectedIndex - 1 + labels.length) % labels.length;
+                updateCursorSmooth();
             }
-            selectedIndex = (selectedIndex - 1 + labels.length) % labels.length;
-            updateCursorSmooth();
         });
+
         FXGL.onKeyDown(KeyCode.DOWN, () -> {
-            if (configOpen) {
-                return;
+            boolean proceed = !MainScreen.isModalOpen() && !configOpen;
+            if (proceed) {
+                selectedIndex = (selectedIndex + 1) % labels.length;
+                updateCursorSmooth();
             }
-            selectedIndex = (selectedIndex + 1) % labels.length;
-            updateCursorSmooth();
         });
+
         FXGL.onKeyDown(KeyCode.ENTER, () -> {
-            if (configOpen) {
-                return;
+            boolean proceed = !MainScreen.isModalOpen() && !configOpen;
+            if (proceed) {
+                activateSelected();
             }
-            activateSelected();
         });
+
         FXGL.onKeyDown(KeyCode.W, () -> {
-            if (configOpen) {
-                return;
+            boolean proceed = !MainScreen.isModalOpen() && !configOpen;
+            if (proceed) {
+                selectedIndex = (selectedIndex - 1 + labels.length) % labels.length;
+                updateCursorSmooth();
             }
-            selectedIndex = (selectedIndex - 1 + labels.length) % labels.length;
-            updateCursorSmooth();
         });
+
         FXGL.onKeyDown(KeyCode.S, () -> {
-            if (configOpen) {
-                return;
+            boolean proceed = !MainScreen.isModalOpen() && !configOpen;
+            if (proceed) {
+                selectedIndex = (selectedIndex + 1) % labels.length;
+                updateCursorSmooth();
             }
-            selectedIndex = (selectedIndex + 1) % labels.length;
-            updateCursorSmooth();
         });
+
     }
 
     @Override
@@ -545,6 +551,7 @@ public class MainScreen extends GameApplication {
                         a.showAndWait();
                         stopBackgroundMusic();
                         showLoadingThenMap();
+
                     } else {
                         a.setAlertType(Alert.AlertType.ERROR);
                         a.setTitle("No se pudo iniciar la partida");
@@ -798,6 +805,14 @@ public class MainScreen extends GameApplication {
                 }
             });
         });
+    }
+
+    public static void setModalOpen(boolean open) {
+        modalOpen = open;
+    }
+
+    public static boolean isModalOpen() {
+        return modalOpen;
     }
 
     public static void main(String[] args) {
