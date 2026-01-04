@@ -32,6 +32,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import javafx.animation.TranslateTransition;
+import javafx.geometry.Bounds;
+import javafx.geometry.Insets;
+import javafx.scene.Node;
+import javafx.scene.control.Button;
+import javafx.scene.effect.DropShadow;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 
 public class FieldVillage {
 
@@ -797,97 +805,93 @@ public class FieldVillage {
 
     private void installInputHandlers() {
         root.addEventFilter(KeyEvent.KEY_PRESSED, ev -> {
-            KeyCode k = ev.getCode();
+            boolean dialogOpen = Boolean.TRUE.equals(root.getProperties().get("dialogOpen"));
+            if (!dialogOpen) {
+                KeyCode k = ev.getCode();
 
-            if (k == KeyCode.W || k == KeyCode.UP) {
-                keys.add(KeyCode.W);
-            }
-            if (k == KeyCode.S || k == KeyCode.DOWN) {
-                keys.add(KeyCode.S);
-            }
-            if (k == KeyCode.A || k == KeyCode.LEFT) {
-                keys.add(KeyCode.A);
-            }
-            if (k == KeyCode.D || k == KeyCode.RIGHT) {
-                keys.add(KeyCode.D);
-            }
+                if (k == KeyCode.W || k == KeyCode.UP) {
+                    keys.add(KeyCode.W);
+                }
+                if (k == KeyCode.S || k == KeyCode.DOWN) {
+                    keys.add(KeyCode.S);
+                }
+                if (k == KeyCode.A || k == KeyCode.LEFT) {
+                    keys.add(KeyCode.A);
+                }
+                if (k == KeyCode.D || k == KeyCode.RIGHT) {
+                    keys.add(KeyCode.D);
+                }
 
-            if (k == KeyCode.P) {
-                System.out.println("Hero position (aldea): (" + heroView.getLayoutX() + ", " + heroView.getLayoutY() + ")");
-                System.out.println("Hero world center (aldea): (" + (heroView.getLayoutX() + HERO_W / 2) + ", " + (heroView.getLayoutY() + HERO_H / 2) + ")");
-                System.out.println("Hero direction: " + getHeroDirection().name());
-            }
+                if (k == KeyCode.P) {
+                    System.out.println("Hero position (aldea): (" + heroView.getLayoutX() + ", " + heroView.getLayoutY() + ")");
+                    System.out.println("Hero world center (aldea): (" + (heroView.getLayoutX() + HERO_W / 2) + ", " + (heroView.getLayoutY() + HERO_H / 2) + ")");
+                    System.out.println("Hero direction: " + getHeroDirection().name());
+                }
 
-            if (k == KeyCode.I || k == KeyCode.ADD || k == KeyCode.PLUS) {
-                clearInputState();
-                openInventory();
-            }
-
-            if (k == KeyCode.ENTER) {
-                if (onStartRect) {
+                if (k == KeyCode.I || k == KeyCode.ADD || k == KeyCode.PLUS) {
                     clearInputState();
-                    try {
-                        if (game != null && game.getHero() != null) {
-                            Hero h = game.getHero();
-                            h.setLastLocation(Hero.Location.FIELD_VILLAGE);
-                            h.setLastPosX(heroView.getLayoutX());
-                            h.setLastPosY(heroView.getLayoutY());
-                            try {
-                                game.createSaveGame();
-                            } catch (Throwable ignored) {
+                    openInventory();
+                }
+
+                if (k == KeyCode.ENTER) {
+                    if (onStartRect) {
+                        clearInputState();
+                        try {
+                            if (game != null && game.getHero() != null) {
+                                Hero h = game.getHero();
+                                h.setLastLocation(Hero.Location.FIELD_VILLAGE);
+                                h.setLastPosX(heroView.getLayoutX());
+                                h.setLastPosY(heroView.getLayoutY());
+                                try {
+                                    game.createSaveGame();
+                                } catch (Throwable ignored) {
+                                }
                             }
+                        } catch (Throwable ignored) {
                         }
-                    } catch (Throwable ignored) {
-                    }
-                    if (onExitCallback != null) {
-                        hide();
-                        onExitCallback.run();
+                        if (onExitCallback != null) {
+                            hide();
+                            onExitCallback.run();
+                        } else {
+                            hide();
+                        }
+                    } else if (currentInteractable != null) {
+                        clearInputState();
+                        enterInteractable(currentInteractable);
                     } else {
-                        hide();
-                    }
-                } else if (currentInteractable != null) {
-                    clearInputState();
-                    enterInteractable(currentInteractable);
-                } else {
-
-                    Villager v = findNearbyVillager();
-
-                    if (v != null) {
-                        if (v.getTask() != null) {
-                            if ((!game.getHero().existsCompletedTask(v.getTask()))) {
-                                switch (v.getName()) {
-                                    case "Morty":
+                        Villager v = findNearbyVillager();
+                        if (v != null) {
+                            if (v.getTask() != null) {
+                                if ((!game.getHero().existsCompletedTask(v.getTask()))) {
+                                    String name = v.getName();
+                                    if ("Morty".equals(name)) {
                                         if (game.getHero().existsPendingTask(v.getTask())) {
                                             if (game.completeSecondaryQ000()) {
-                                                System.out.println(v.getMessageFromList(1));
+                                                showBottomDialogRPG("Morty", v.getMessageFromList(1), "/Resources/sprites/NPC/mortyFace.png");
                                             } else {
-                                                System.out.println(v.getMessageFromList(rnd.nextInt(2, 4)));
+                                                showBottomDialogRPG("Morty", v.getMessageFromList(rnd.nextInt(2, 4)), "/Resources/sprites/NPC/mortyFace.png");
                                             }
                                         } else {
                                             game.getHero().addTasks(v.getTask());
-                                            System.out.println(v.getMessageFromList(0));
-                                            System.out.println("A new Mission was added");
+                                            showBottomDialogRPG("Misión añadida", v.getMessageFromList(0), "/Resources/sprites/NPC/mortyFace.png");
                                         }
-                                        break;
-                                    default:
-                                        System.out.println("You should not see this but anyways, hello my friend.");
+                                    } else {
+                                        showBottomDialogRPG("NPC", "Hola, amigo.", null);
+                                    }
+                                } else {
+                                    showBottomDialogRPG(v.getName(), v.getMessageFromList(rnd.nextInt(2, 4)), null);
                                 }
-
                             } else {
-                                System.out.println(v.getMessageFromList(rnd.nextInt(2,
-                                        4)));
+                                showBottomDialogRPG(v.getName(), v.getMessageFromList(rnd.nextInt(0, 3)), null);
                             }
-                        } else {
-                            System.out.println(v.getMessageFromList(rnd.nextInt(0, 3)));
                         }
-
                     }
                 }
+            } else {
+                ev.consume();
             }
-
             ev.consume();
-        }
-        );
+        });
 
         root.addEventFilter(KeyEvent.KEY_RELEASED, ev -> {
             KeyCode k = ev.getCode();
@@ -1258,6 +1262,230 @@ public class FieldVillage {
             JVStore jvStore = new JVStore(game);
             jvStore.showWithLoading(() -> {
             }, returnCallback);
+        }
+    }
+
+    // Para los Dialogos
+    private void showBottomDialogRPG(String title, String message, String iconResourcePath) {
+        Platform.runLater(() -> {
+            boolean foundExisting = false;
+            StackPane existingOverlay = null;
+            Button existingOkBtn = null;
+
+            for (Node child : root.getChildren()) {
+                Object flag = child.getProperties().get("rpgDialog");
+                if (Boolean.TRUE.equals(flag) && child instanceof StackPane) {
+                    existingOverlay = (StackPane) child;
+                    Node db = existingOverlay.getChildren().isEmpty() ? null : existingOverlay.getChildren().get(0);
+                    if (db instanceof HBox) {
+                        HBox dialogBox = (HBox) db;
+                        for (Node n : dialogBox.getChildren()) {
+                            if (n instanceof VBox) {
+                                VBox texts = (VBox) n;
+                                if (texts.getChildren().size() >= 2 && texts.getChildren().get(1) instanceof Text) {
+                                    Text tMsg = (Text) texts.getChildren().get(1);
+                                    tMsg.setText(message);
+                                }
+                                if (texts.getChildren().size() >= 1 && texts.getChildren().get(0) instanceof Text) {
+                                    Text tTitle = (Text) texts.getChildren().get(0);
+                                    tTitle.setText(title);
+                                }
+                            }
+                            if (n instanceof Button) {
+                                existingOkBtn = (Button) n;
+                            }
+                        }
+                    }
+                    foundExisting = true;
+                }
+            }
+
+            if (foundExisting && existingOverlay != null) {
+                StackPane overlayRef = existingOverlay;
+                Button okRef = existingOkBtn;
+                Platform.runLater(() -> {
+                    overlayRef.requestFocus();
+                    if (okRef != null) {
+                        okRef.requestFocus();
+                    }
+                });
+            } else {
+                stopMover();
+                root.getProperties().put("dialogOpen", true);
+
+                StackPane modalOverlay = new StackPane();
+                modalOverlay.getProperties().put("rpgDialog", true);
+                modalOverlay.setPrefSize(VIEW_W, VIEW_H);
+                modalOverlay.setStyle("-fx-background-color: transparent;");
+                modalOverlay.setPickOnBounds(true);
+                modalOverlay.setFocusTraversable(true);
+
+                HBox dialogBox = new HBox(10);
+                dialogBox.setMinHeight(72);
+                dialogBox.setMaxHeight(140);
+                dialogBox.setMaxWidth(420);
+                dialogBox.setPrefWidth(420);
+                dialogBox.setStyle(
+                        "-fx-background-color: rgba(0,0,0,0.88);"
+                        + "-fx-padding: 10 12 10 12;"
+                        + "-fx-background-radius: 6;"
+                        + "-fx-border-radius: 6;"
+                        + "-fx-border-color: rgba(255,255,255,0.06);"
+                        + "-fx-border-width: 1;"
+                );
+                dialogBox.setEffect(new DropShadow(6, Color.rgb(0, 0, 0, 0.7)));
+                dialogBox.setAlignment(Pos.CENTER_LEFT);
+
+                ImageView iconView = null;
+                if (iconResourcePath != null) {
+                    try {
+                        Image icon = new Image(getClass().getResourceAsStream(iconResourcePath));
+                        iconView = new ImageView(icon);
+                        iconView.setFitWidth(44);
+                        iconView.setFitHeight(44);
+                        iconView.setPreserveRatio(true);
+                    } catch (Throwable ignored) {
+                        iconView = null;
+                    }
+                }
+
+                VBox texts = new VBox(3);
+                Text tTitle = new Text(title);
+                tTitle.setStyle("-fx-font-size: 13px; -fx-fill: #f5f5f5; -fx-font-weight: 700;");
+                Text tMsg = new Text(message);
+                tMsg.setWrappingWidth(420 - 140);
+                tMsg.setStyle("-fx-font-size: 12px; -fx-fill: #e6e6e6;");
+                texts.getChildren().addAll(tTitle, tMsg);
+
+                Button okBtn = new Button("Ok");
+                okBtn.setDefaultButton(true);
+                okBtn.setStyle(
+                        "-fx-background-color: linear-gradient(#444444, #222222);"
+                        + "-fx-text-fill: #ffffff;"
+                        + "-fx-font-weight: 600;"
+                        + "-fx-background-radius: 6;"
+                        + "-fx-padding: 6 10 6 10;"
+                );
+                okBtn.setOnAction(e -> fadeOutAndRemove(modalOverlay));
+
+                if (iconView != null) {
+                    dialogBox.getChildren().addAll(iconView, texts, okBtn);
+                } else {
+                    dialogBox.getChildren().addAll(texts, okBtn);
+                }
+
+                StackPane.setAlignment(dialogBox, Pos.BOTTOM_CENTER);
+                StackPane.setMargin(dialogBox, new Insets(0, 20, 12, 20));
+                modalOverlay.getChildren().add(dialogBox);
+
+                root.getChildren().add(modalOverlay);
+
+                modalOverlay.addEventFilter(javafx.scene.input.MouseEvent.MOUSE_PRESSED, ev -> {
+                    Bounds b = dialogBox.localToScene(dialogBox.getBoundsInLocal());
+                    if (!b.contains(ev.getSceneX(), ev.getSceneY())) {
+                        ev.consume();
+                    }
+                });
+
+                TranslateTransition tt = new TranslateTransition(Duration.millis(220), dialogBox);
+                tt.setFromY(28);
+                tt.setToY(0);
+                tt.play();
+
+                FadeTransition ftIn = new FadeTransition(Duration.millis(160), dialogBox);
+                ftIn.setFromValue(0.0);
+                ftIn.setToValue(1.0);
+                ftIn.play();
+
+                // pedir foco al overlay y al botón Ok
+                Platform.runLater(() -> {
+                    modalOverlay.requestFocus();
+                    okBtn.requestFocus();
+                });
+
+                // añadir handler temporal a la Scene para garantizar captura de ENTER/Escape
+                Platform.runLater(() -> {
+                    javafx.scene.Scene scene = root.getScene();
+                    if (scene != null) {
+                        javafx.event.EventHandler<KeyEvent> sceneHandler = ev -> {
+                            if (Boolean.TRUE.equals(root.getProperties().get("dialogOpen"))) {
+                                if (ev.getCode() == KeyCode.ENTER || ev.getCode() == KeyCode.ESCAPE) {
+                                    ev.consume();
+                                    Platform.runLater(() -> {
+                                        try {
+                                            okBtn.fire();
+                                        } catch (Throwable ignored) {
+                                        }
+                                    });
+                                } else {
+                                    ev.consume();
+                                }
+                            }
+                        };
+                        modalOverlay.getProperties().put("sceneKeyHandler", sceneHandler);
+                        scene.addEventFilter(KeyEvent.KEY_PRESSED, sceneHandler);
+                    }
+                });
+
+                modalOverlay.getProperties().put("onRemoved", (Runnable) () -> {
+                    startMover();
+                    root.getProperties().put("dialogOpen", false);
+                });
+            }
+        });
+    }
+
+    private void fadeOutAndRemove(StackPane modalOverlay) {
+        final Runnable[] resumeArr = new Runnable[1];
+        if (modalOverlay != null) {
+            Node dialogBox = modalOverlay.getChildren().isEmpty() ? null : modalOverlay.getChildren().get(0);
+            try {
+                Object o = modalOverlay.getProperties().get("onRemoved");
+                if (o instanceof Runnable) {
+                    resumeArr[0] = (Runnable) o;
+                }
+            } catch (Throwable ignored) {
+            }
+
+            // eliminar handler de Scene si fue añadido
+            try {
+                Object handlerObj = modalOverlay.getProperties().remove("sceneKeyHandler");
+                if (handlerObj instanceof javafx.event.EventHandler) {
+                    javafx.scene.Scene scene = root.getScene();
+                    if (scene != null) {
+                        @SuppressWarnings("unchecked")
+                        javafx.event.EventHandler<KeyEvent> h = (javafx.event.EventHandler<KeyEvent>) handlerObj;
+                        scene.removeEventFilter(KeyEvent.KEY_PRESSED, h);
+                    }
+                }
+            } catch (Throwable ignored) {
+            }
+
+            if (dialogBox != null) {
+                FadeTransition ftOut = new FadeTransition(Duration.millis(140), dialogBox);
+                ftOut.setFromValue(1.0);
+                ftOut.setToValue(0.0);
+                ftOut.setOnFinished(ev -> {
+                    root.getChildren().remove(modalOverlay);
+                    if (resumeArr[0] != null) {
+                        resumeArr[0].run();
+                    }
+                });
+                ftOut.play();
+            } else {
+                root.getChildren().remove(modalOverlay);
+                if (resumeArr[0] != null) {
+                    resumeArr[0].run();
+                }
+            }
+        } else {
+            try {
+                Object o = root.getProperties().get("onRemovedFallback");
+                if (o instanceof Runnable) {
+                    ((Runnable) o).run();
+                }
+            } catch (Throwable ignored) {
+            }
         }
     }
 
