@@ -874,12 +874,11 @@ public class FieldVillage {
                                 }
 
                             } else {
-                                System.out.println(v.getMessageFromList(rnd.nextInt(2
-                                        , 4)));
+                                System.out.println(v.getMessageFromList(rnd.nextInt(2,
+                                        4)));
                             }
-                        }
-                        else {
-                            System.out.println(v.getMessageFromList(rnd.nextInt(0, 4)));
+                        } else {
+                            System.out.println(v.getMessageFromList(rnd.nextInt(0, 3)));
                         }
 
                     }
@@ -918,7 +917,24 @@ public class FieldVillage {
     }
 
     private void addVillagerToList() {
-        addNpc(game.getCharacters().get(26), 444.44570399999924, 533.5147360000008);// Morty 1
+        double x;
+        double y;
+        x = 480.6044819999995;
+        y = 564.4142460000003;
+        addNpc(game.getCharacters().get(26), 463.021721999999, 547.2334619999993);// Morty 1
+        obstacles.add(new Obstacle(
+                new Rectangle2D(x, y, 30, 30),
+                ObstacleType.NPC,
+                "Morty"
+        ));
+        addNpc(game.getCharacters().get(28), 860.430275999998939, 226.9060919999997);// Cat 1
+        x = 874.659689999999;
+        y = 250.58789999999973;
+        obstacles.add(new Obstacle(
+                new Rectangle2D(x, y, 30, 30),
+                ObstacleType.NPC,
+                "Cat1"
+        ));
 
     }
 
