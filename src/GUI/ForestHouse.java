@@ -208,7 +208,7 @@ public class ForestHouse {
         Rectangle bg = new Rectangle(VIEW_W, VIEW_H);
         bg.setFill(Color.rgb(0, 0, 0, 0.6));
 
-        Text label = new Text("Cargando aldea...");
+        Text label = new Text("Loading Map..");
         label.setStyle("-fx-font-size: 24px; -fx-fill: #e0d090;");
 
         overlay.getChildren().addAll(bg, label);
