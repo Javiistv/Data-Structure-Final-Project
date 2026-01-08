@@ -458,8 +458,8 @@ public class Game {
         characters.add(new Monster((Weapon) items.get(11), 26, 10, "Novel Sorcerer", "/Resources/sprites/Monsters/skyMonster02.png", 280, 220, 220, 300, "Sky"));
         characters.add(new Monster((Weapon) items.get(2), 20, 14, "Flower Fairy", "/Resources/sprites/Monsters/skyMonster03.png", 290, 290, 200, 180, "Sky"));
         characters.add(new Monster((Weapon) items.get(2), 25, 14, "Demon Harpy", "/Resources/sprites/Monsters/skyMonster04.png", 320, 320, 250, 180, "Sky"));
-        characters.add(new Monster((Weapon) items.get(13), 85, 90, "Light Rider", "/Resources/sprites/Monsters/skyBoss01.png", 1500, 1500, 1500, 1000, "SkyBoss"));
-        characters.add(new Monster((Weapon) items.get(13), 125, 100, "Count Artigas", "/Resources/sprites/Monsters/finalBoss.png", 3500, 3500, 2500, 10500, "SkyBoss"));
+        characters.add(new Boss((Weapon) items.get(13), 85, 90, "Light Rider", "/Resources/sprites/Monsters/skyBoss01.png", 1500, 1500, 1500, 1000, "SkyBoss"));
+        characters.add(new Boss((Weapon) items.get(13), 125, 100, "Count Artigas", "/Resources/sprites/Monsters/finalBoss.png", 3500, 3500, 2500, 10500, "SkyBoss"));
 
         //Monster m = new Monster(weapon, attack, defense, name, sprite, life, actualLife, exp, money, encounter)
     }
@@ -530,6 +530,7 @@ public class Game {
 
         addTasks(new Task("Defeat 30 monsters.", "Kill 30 monsters anywhere.", "Q001", 1000, false));
         addTasks(new Task("Heal yourself.", "Use a healing item once.", "Q002", 100, false));
+        addTasks(new Task("Battle against the sky lake Guardian.", "Beat the Sky guardian in a battle.", "M010", 2000, false));
         //Task(String name, String info, String id, int money, boolean mainQuest)
     }
 
@@ -702,6 +703,13 @@ public class Game {
         return done;
     }
 
+    public void completeMainM000() {
+        Task t = searchTask("M000");
+        t.setState(true);
+        hero.completeTask(t);
+
+    }
+
     public void completeMainM001() {
         Task t = searchTask("M001");
         giveReward(true, t);
@@ -717,4 +725,12 @@ public class Game {
 
     }
 
+    public void completeMainM010() {
+        Task t = searchTask("M010");
+        t.setState(true);
+        hero.completeTask(t);
+
+    }
+
 }
+
