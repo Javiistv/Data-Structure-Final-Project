@@ -129,7 +129,7 @@ public class CastleSecondFloor {
             showLoading(true);
 
             boolean imageOk = loadBackgroundImage("/Resources/textures/skyDungeon/2ndFloor007.png");
-            boolean musicOk = startDungeonMusic("/Resources/music/Castle.mp3");
+            startMapMusic();
 
             populateCastleObstacles();
             positionHeroAtEntrance();
@@ -151,7 +151,7 @@ public class CastleSecondFloor {
 
     public void hide() {
         Platform.runLater(() -> {
-            stopDungeonMusic();
+            stopMapMusic();
             stopMover();
             try {
                 FXGL.getGameScene().removeUINode(root);
@@ -638,9 +638,7 @@ public class CastleSecondFloor {
             {380.59257600000046, 1052.1821880000011},
             {380.59257600000046, 998.9927640000011},
             {331.7295420000004, 998.9927640000011},
-            {179.3936340000005, 998.9927640000011},
-            
-        };
+            {179.3936340000005, 998.9927640000011},};
 
         int idx = 1;
         for (double[] p : COLLISIONS) {

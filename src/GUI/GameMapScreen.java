@@ -2,10 +2,7 @@ package GUI;
 
 import Runner.MainScreen;
 import Characters.Hero;
-import GUI.Swamp;
 import Logic.Game;
-import Misc.Classes;
-import Tree.InBreadthIterator;
 import com.almasb.fxgl.dsl.FXGL;
 import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
@@ -303,7 +300,7 @@ public class GameMapScreen {
                 System.out.println("Hero scene center: " + getHeroSceneCenter());
                 System.out.println("Hero direction: " + getHeroDirection().name());
             } else if (k == KeyCode.B) {
-                // Debug: abrir pantalla de combate
+
                 handled = true;
                 clearInputState();
                 openDebugCombat();
@@ -322,11 +319,10 @@ public class GameMapScreen {
             } else if (k == KeyCode.L) {
                 enterDebugSwamp();
             } else if (k == KeyCode.Q) {
-                InBreadthIterator<Classes> it = game.getHero().getUnlockedClasses().inBreadthIterator();
-                while (it.hasNext()) {
-                    System.out.println(it.nextNode().getInfo().getClass().getSimpleName());
-
-                }
+                game.getHero().setExpActual(game.getHero().getExpMax());
+                game.levelUp();
+            } else if (k == KeyCode.M) {
+                enterDebugSky();
             }
 
             if (handled) {
@@ -885,6 +881,39 @@ public class GameMapScreen {
         }
 
         Swamp swamp = new Swamp(game);
+        swamp.showWithLoading(null, () -> {
+            Platform.runLater(() -> {
+                MainScreen.hideMenu();
+                startMapMusic();
+                try {
+                    FXGL.getGameScene().addUINode(root);
+                } catch (Throwable ignored) {
+                }
+                heroView.setLayoutX(savedHeroTopLeft.getX());
+                heroView.setLayoutY(savedHeroTopLeft.getY());
+                if (debugEnabled) {
+                    drawDebugObstacles();
+                }
+                root.requestFocus();
+                clearInputState();
+                mover.start();
+            });
+        });
+
+    }
+
+    private void enterDebugSky() {
+        final Point2D savedHeroTopLeft = getHeroMapTopLeft();
+
+        clearInputState();
+
+        stopMapMusic();
+        try {
+            FXGL.getGameScene().removeUINode(root);
+        } catch (Throwable ignored) {
+        }
+
+        SkyDungeon swamp = new SkyDungeon(game);
         swamp.showWithLoading(null, () -> {
             Platform.runLater(() -> {
                 MainScreen.hideMenu();

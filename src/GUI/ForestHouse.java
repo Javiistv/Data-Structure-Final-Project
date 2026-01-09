@@ -1165,7 +1165,6 @@ public class ForestHouse {
         Swamp swampScene = new Swamp(game);
 
         swampScene.showWithLoading(() -> {
-            System.out.println("Swamp cargado correctamente");
         }, () -> {
 
             showWithLoading(null, onExitCallback);
