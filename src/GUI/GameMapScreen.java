@@ -661,6 +661,7 @@ public class GameMapScreen {
 
         addVillageAtCenter(new Point2D(432.9572420000002, 387.930548), visualW, visualH, "FIELD_VILLAGE");
         addVillageAtCenter(new Point2D(187.2432599999999, 160.468792), visualW, visualH, "FORESTHOUSE_Village");
+        addVillageAtCenter(new Point2D(432.91, 130), visualW, visualH, "KINGDOMCASTLE_Village");
     }
 
     private void populateExtraBlocks() {
@@ -788,6 +789,7 @@ public class GameMapScreen {
     private void enterVillage(Obstacle village) {
         boolean isFieldVillage = village != null && "FIELD_VILLAGE".equals(village.id);
         boolean isForestHouse = village != null && "FORESTHOUSE_Village".equals(village.id);
+        boolean isKingdomCastle = village != null && "KINGDOMCASTLE_Village".equals(village.id);
 
         if (isFieldVillage) {
             final Point2D savedHeroTopLeft = getHeroMapTopLeft();
@@ -849,12 +851,42 @@ public class GameMapScreen {
                     mover.start();
                 });
             });
+        } else if (isKingdomCastle) {
+            final Point2D savedHeroTopLeft = getHeroMapTopLeft();
+
+            clearInputState();
+
+            stopMapMusic();
+            try {
+                FXGL.getGameScene().removeUINode(root);
+            } catch (Throwable ignored) {
+            }
+
+            KingdomCastle field = new KingdomCastle(game);
+            field.showWithLoading(null, () -> {
+                Platform.runLater(() -> {
+                    MainScreen.hideMenu();
+                    startMapMusic();
+                    try {
+                        FXGL.getGameScene().addUINode(root);
+                    } catch (Throwable ignored) {
+                    }
+                    heroView.setLayoutX(savedHeroTopLeft.getX());
+                    heroView.setLayoutY(savedHeroTopLeft.getY());
+                    if (debugEnabled) {
+                        drawDebugObstacles();
+                    }
+                    root.requestFocus();
+                    clearInputState();
+                    mover.start();
+                });
+            });
         } else {
 
             Alert a = new Alert(Alert.AlertType.INFORMATION);
             a.setTitle("Village encountered");
             a.setHeaderText(null);
-            a.setContentText("The entrance is loacted elsewhere.");
+            a.setContentText("The entrance is located elsewhere.");
             try {
                 if (root.getScene() != null && root.getScene().getWindow() != null) {
                     a.initOwner(root.getScene().getWindow());
