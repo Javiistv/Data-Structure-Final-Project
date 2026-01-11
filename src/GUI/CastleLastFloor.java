@@ -880,75 +880,55 @@ public class CastleLastFloor {
         }
     }
 
-    private void moveHero(double dx, double dy) {
-        boolean proceed = true;
+        private void moveHero(double dx, double dy) {
 
-        if (heroView == null) {
-            proceed = false;
-        }
+        double curX = heroView.getLayoutX();
+        double curY = heroView.getLayoutY();
 
-        double curX = 0, curY = 0;
-        if (proceed) {
-            curX = heroView.getLayoutX();
-            curY = heroView.getLayoutY();
-        }
-
-        double proposedX = curX;
-        double proposedY = curY;
-        if (proceed) {
-            proposedX = clamp(curX + dx, 0, Math.max(0, worldW - HERO_W));
-            proposedY = clamp(curY + dy, 0, Math.max(0, worldH - HERO_H));
-        }
+        double proposedX = clamp(curX + dx, 0, Math.max(0, worldW - HERO_W));
+        double proposedY = clamp(curY + dy, 0, Math.max(0, worldH - HERO_H));
 
         Rectangle2D heroRect = new Rectangle2D(proposedX, proposedY, HERO_W, HERO_H);
         boolean collision = false;
 
-        if (proceed && obstacles != null) {
-            for (Obstacle ob : obstacles) {
-                if (ob != null && ob.collisionRect != null) {
-                    if (heroRect.intersects(ob.collisionRect)) {
-                        collision = true;
-
-                    }
-
-                }
+        for (int i = 0; i < obstacles.size() && !collision; i++) {
+            Obstacle ob = obstacles.get(i);
+            if (ob != null && ob.collisionRect != null && heroRect.intersects(ob.collisionRect)) {
+                collision = true;
             }
         }
 
-        if (proceed && !collision) {
+        if (!collision) {
             heroView.setLayoutX(proposedX);
             heroView.setLayoutY(proposedY);
-        } else if (proceed) {
+        } else {
             Rectangle2D heroRectX = new Rectangle2D(proposedX, curY, HERO_W, HERO_H);
             Rectangle2D heroRectY = new Rectangle2D(curX, proposedY, HERO_W, HERO_H);
 
             boolean canMoveX = true;
             boolean canMoveY = true;
 
-            if (obstacles != null) {
-                for (Obstacle ob : obstacles) {
-                    if (ob != null && ob.collisionRect != null) {
-                        if (heroRectX.intersects(ob.collisionRect)) {
-                            canMoveX = false;
-                        }
-                        if (heroRectY.intersects(ob.collisionRect)) {
-                            canMoveY = false;
-                        }
+            for (int i = 0; i < obstacles.size() && (canMoveX || canMoveY); i++) {
+                Obstacle ob = obstacles.get(i);
+                if (ob != null && ob.collisionRect != null) {
+                    if (heroRectX.intersects(ob.collisionRect)) {
+                        canMoveX = false;
+                    }
+                    if (heroRectY.intersects(ob.collisionRect)) {
+                        canMoveY = false;
                     }
                 }
-
-                if (canMoveX) {
-                    heroView.setLayoutX(proposedX);
-                }
-                if (canMoveY) {
-                    heroView.setLayoutY(proposedY);
-                }
             }
 
-            if (proceed) {
-                updateCamera();
+            if (canMoveX) {
+                heroView.setLayoutX(proposedX);
+            }
+            if (canMoveY) {
+                heroView.setLayoutY(proposedY);
             }
         }
+
+        updateCamera();
     }
 
     private void updateCamera() {

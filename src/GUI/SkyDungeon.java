@@ -663,7 +663,6 @@ public class SkyDungeon {
 
     }
 
-
     //---------------Creacion de triggers y obstaculos---------------
     private void drawDebugObstacles() {
         world.getChildren().removeIf(n -> "obstacle_debug".equals(n.getProperties().get("tag")));

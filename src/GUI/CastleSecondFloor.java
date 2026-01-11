@@ -273,6 +273,37 @@ public class CastleSecondFloor {
         } catch (Throwable ignored) {
         }
     }
+    
+        public void startMapMusic() {
+        try {
+            stopMapMusic();
+            URL res = getClass().getResource("/Resources/music/skyFinalDungeon.mp3");
+            if (res != null) {
+                Media media = new Media(res.toExternalForm());
+                music = new MediaPlayer(media);
+                music.setCycleCount(MediaPlayer.INDEFINITE);
+                music.setVolume(MainScreen.getVolumeSetting());
+                music.play();
+
+                AudioManager.register(music);
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    public void stopMapMusic() {
+        try {
+            boolean exists = music != null;
+            if (exists) {
+                AudioManager.unregister(music);
+                music.stop();
+                music.dispose();
+                music = null;
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
 
     // ---------------- colisiones ----------------
     private void populateCastleObstacles() {
@@ -956,37 +987,7 @@ public class CastleSecondFloor {
         keys.clear();
     }
 
-    public void startMapMusic() {
-        try {
-            stopMapMusic();
-            URL res = getClass().getResource("/Resources/music/skyFinalDungeon.mp3");
-            boolean hasRes = res != null;
-            if (hasRes) {
-                Media media = new Media(res.toExternalForm());
-                music = new MediaPlayer(media);
-                music.setCycleCount(MediaPlayer.INDEFINITE);
-                music.setVolume(MainScreen.getVolumeSetting());
-                music.play();
-
-                AudioManager.register(music);
-            }
-        } catch (Throwable ignored) {
-        }
-    }
-
-    public void stopMapMusic() {
-        try {
-            boolean exists = music != null;
-            if (exists) {
-                AudioManager.unregister(music);
-                music.stop();
-                music.dispose();
-                music = null;
-            }
-        } catch (Throwable ignored) {
-        }
-    }
-
+    //---------------Creacion de triggers y obstaculos---------------
     private void drawDebugObstacles() {
 
         if (startRect != null) {
