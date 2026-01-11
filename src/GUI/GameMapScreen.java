@@ -65,7 +65,7 @@ public class GameMapScreen {
     public enum Direction {
         NONE, N, NE, E, SE, S, SW, W, NW
     }
-    private Direction currentDirection = Direction.NONE;
+    private Direction currentDirection;
 
     private static final double VILLAGE_COLLISION_SCALE = 0.22;
 
@@ -310,12 +310,17 @@ public class GameMapScreen {
                 openInventory();
             } else if (k == KeyCode.W || k == KeyCode.UP) {
                 up = true;
+                heroView.setImage(game.getHero().getSpriteForDirection("Up"));
             } else if (k == KeyCode.S || k == KeyCode.DOWN) {
                 down = true;
+                heroView.setImage(game.getHero().getSpriteForDirection("Down"));
             } else if (k == KeyCode.A || k == KeyCode.LEFT) {
                 left = true;
+                heroView.setImage(game.getHero().getSpriteForDirection("Left"));
             } else if (k == KeyCode.D || k == KeyCode.RIGHT) {
                 right = true;
+                heroView.setImage(game.getHero().getSpriteForDirection("Right"));
+                
             } else if (k == KeyCode.L) {
                 enterDebugSwamp();
             } else if (k == KeyCode.Q) {
