@@ -29,7 +29,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
 import javafx.util.Duration;
 
-public class SkyDungeon {
+public class VolcanoCastleInterior {
 
     private final StackPane root;
     private final Pane world;
@@ -92,7 +92,7 @@ public class SkyDungeon {
         BLOCK, PLANT
     }
 
-    public SkyDungeon(Game game) {
+    public VolcanoCastleInterior(Game game) {
         this.game = game;
         root = new StackPane();
         root.setPrefSize(VIEW_W, VIEW_H);
@@ -101,9 +101,11 @@ public class SkyDungeon {
         world.setPrefSize(VIEW_W, VIEW_H);
 
         loadingOverlay = createLoadingOverlay();
+
         root.getChildren().addAll(world, loadingOverlay);
 
         heroView = createHeroView();
+
         installInputHandlers();
         createMover();
 
@@ -127,13 +129,13 @@ public class SkyDungeon {
 
         Platform.runLater(() -> {
             FXGL.getGameScene().addUINode(root);
-            root.requestFocus();
             showLoading(true);
 
-            boolean imageOk = loadBackgroundImage("/Resources/textures/SkyDungeon/skydungeon.png");
-            boolean musicOk = startDungeonMusic("/Resources/music/skyFinalDungeon.mp3");
+            boolean imageOk = loadBackgroundImage("/Resources/textures/volcanoDungeon/volcanoPassage.png");
+            boolean musicOk = startDungeonMusic("/Resources/music/volcanoCity.mp3");
 
-            populateSkyObstacles();
+            populateVolcanoObstacles();
+
             positionHeroAtEntrance();
             createStartRectAtHeroStart();
             createCastleRect();
@@ -176,7 +178,7 @@ public class SkyDungeon {
         overlay.setPickOnBounds(true);
         Rectangle bg = new Rectangle(VIEW_W, VIEW_H);
         bg.setFill(Color.rgb(0, 0, 0, 0.6));
-        Text label = new Text("Loading Sky Dungeon...");
+        Text label = new Text("Loading Volcano Zone...");
         label.setStyle("-fx-font-size: 24px; -fx-fill: #e0d090;");
         overlay.getChildren().addAll(bg, label);
         StackPane.setAlignment(label, Pos.CENTER);
@@ -225,7 +227,7 @@ public class SkyDungeon {
             }
             ret = true;
         } catch (Throwable t) {
-            Text err = new Text("No se pudo cargar la imagen del Sky Dungeon.");
+            Text err = new Text("No se pudo cargar la imagen del Volcan.");
             err.setStyle("-fx-font-size: 16px; -fx-fill: #ffdddd;");
             root.getChildren().add(err);
         }
@@ -288,56 +290,17 @@ public class SkyDungeon {
     }
 
     // ---------------- colisiones ----------------
-    private void populateSkyObstacles() {
+    private void populateVolcanoObstacles() {
         obstacles.clear();
 
-        double[][] COLLISIONS = new double[][]{
-            {717.7351259999998, 287.13436200000086},
-            {717.7351259999998, 238.7060280000008},
-            {768.0, 238.7060280000008},
-            {768.0, 290.52887400000077},
-            {768.0, 333.80650800000086},
-            {768.0, 384.6868560000005},
-            {719.1208360000004, 384.6868560000005},
-            {670.1118419999996, 390.49390800000043},
-            {624.6369839999993, 390.49390800000043},
-            {573.339593999999, 390.49390800000043},
-            {526.375613999999, 390.49390800000043},
-            {480.83185199999906, 390.49390800000043},
-            {480.83185199999906, 437.35874400000046},
-            {480.83185199999906, 486.51132600000045},
-            {427.29110399999905, 486.51132600000045},
-            {389.98649999999907, 486.51132600000045},
-            {338.296061999999, 486.51132600000045},
-            {284.2805999999989, 486.51132600000045},
-            {239.55682799999892, 486.51132600000045},
-            {228.3693599999989, 437.63603400000045},
-            {228.3693599999989, 383.6459160000004},
-            {228.3693599999989, 330.1172100000004},
-            {259.66583399999894, 330.1172100000004},
-            {291.4229639999989, 330.1172100000004},
-            {328.3293539999989, 330.1172100000004},
-            {359.86403999999897, 330.1172100000004},
-            {372.92935799999924, 319.3822980000002},
-            {380.7763679999993, 317.90570400000024},
-            {380.7763679999993, 291.91579200000035},
-            {380.7763679999993, 246.5644140000004},
-            {380.7763679999993, 227.16631800000044},
-            {430.0829399999992, 227.16631800000044},
-            {479.14735799999903, 235.76572800000048},
-            {524.2654559999991, 235.76572800000048},
-            {569.2706039999989, 235.76572800000048},
-            {615.1722599999989, 235.76572800000048},
-            {669.174041999999, 235.76572800000048},
-            {432.7197239999996, 437.3116380000006}
-        };
+        double[][] COLLISIONS = new double[][]{};
 
         int idx = 1;
         for (double[] p : COLLISIONS) {
             obstacles.add(new Obstacle(
                     new Rectangle2D(p[0], p[1], 40, 40),
                     ObstacleType.BLOCK,
-                    "SkyCollision" + idx
+                    "VolcanoCollision" + idx
             ));
             idx++;
         }
@@ -346,8 +309,8 @@ public class SkyDungeon {
     // ---------------- movimiento y entradas ----------------
     private void positionHeroAtEntrance() {
 
-        double startX = 717.7351259999998;
-        double startY = 327.4755660000007;
+        double startX = 868.6131420000022;
+        double startY = 1143.106434;
         heroView.setLayoutX(startX);
         heroView.setLayoutY(startY);
         updateCamera();
@@ -379,12 +342,9 @@ public class SkyDungeon {
             castleRect = null;
         }
         double[] xs = new double[]{
-            337.19233799999984,
-            319.8523259999999,
-            296.73947999999996,
-            282.3167999999999
+           (578.1455400000023)
         };
-        double y = 370.24432200000047;
+        double y =  94.38837000000024;
         double minX = xs[0];
         double maxX = xs[0];
         for (double v : xs) {
@@ -436,17 +396,14 @@ public class SkyDungeon {
             }
 
             if (k == KeyCode.P) {
-                System.out.println("Hero position (Zona): (" + heroView.getLayoutX() + ", " + heroView.getLayoutY() + ")");
+                System.out.println("(" + heroView.getLayoutX() + ", " + heroView.getLayoutY() + ")");
             }
 
             if (k == KeyCode.I || k == KeyCode.ADD || k == KeyCode.PLUS) {
                 clearInputState();
                 openInventory();
             }
-            if (k == KeyCode.B) {
-                clearInputState();
-                openDebugCombat();
-            }
+
             if (k == KeyCode.R) {
                 debugEnabled = !debugEnabled;
                 if (debugEnabled) {
@@ -637,7 +594,7 @@ public class SkyDungeon {
     public void startMapMusic() {
         try {
             stopMapMusic();
-            URL res = getClass().getResource("/Resources/music/skyFinalDungeon.mp3");
+            URL res = getClass().getResource("/Resources/music/volcanoCity.mp3");
             boolean hasRes = res != null;
             if (hasRes) {
                 Media media = new Media(res.toExternalForm());
@@ -719,37 +676,6 @@ public class SkyDungeon {
         });
     }
 
-    private void openDebugCombat() {
-        String bg = "/Resources/textures/Battle/skyBattle.png";
-        stopMapMusic();
-
-        GUI.CombatScreen cs = new GUI.CombatScreen(game, bg, "Sky", game.getHero(), false, null);
-
-        cs.setBattleMusicPath("/Resources/music/fieldBattle.mp3");
-
-        cs.setOnExit(() -> {
-            Platform.runLater(() -> {
-                try {
-                    FXGL.getGameScene().removeUINode(cs.root);
-                } catch (Throwable ignored) {
-                }
-                try {
-                    FXGL.getGameScene().addUINode(root);
-                } catch (Throwable ignored) {
-                }
-                startDungeonMusic("/Resources/music/skyFinalDungeon.mp3");
-                root.requestFocus();
-            });
-        });
-        Platform.runLater(() -> {
-            try {
-                FXGL.getGameScene().removeUINode(root);
-            } catch (Throwable ignored) {
-            }
-            cs.show();
-        });
-    }
-
     // Método que comprueba si el héroe está en el área de salida
     private void checkExitTrigger() {
         Rectangle2D heroRect = new Rectangle2D(
@@ -787,7 +713,7 @@ public class SkyDungeon {
                 HERO_H
         );
 
-        if (castleRect != null) { // define castleRect igual que startRect
+        if (castleRect != null) {
             Rectangle2D castleArea = new Rectangle2D(
                     castleRect.getX(),
                     castleRect.getY(),
@@ -797,19 +723,19 @@ public class SkyDungeon {
 
             if (heroRect.intersects(castleArea)) {
                 clearInputState();
-                hide(); // oculta SkyDungeon
+                hide(); // oculta la clase
 
-                CastleFirstFloor castle = new CastleFirstFloor(game);
+                VolcanoDungeon castle = new VolcanoDungeon(game);
                 castle.showWithLoading(null, () -> {
                     Platform.runLater(() -> {
                         try {
-                            // Volver a añadir la UI del SkyDungeon
+                            // Volver a añadir la UI de la clase
                             FXGL.getGameScene().addUINode(root);
                         } catch (Throwable ignored) {
                         }
 
-                        // Reiniciar la música del SkyDungeon
-                        startDungeonMusic("/Resources/music/skyFinalDungeon.mp3");
+                        // Reiniciar la música 
+                        startDungeonMusic("/Resources/music/volcanoCity.mp3");
 
                         // Reanudar movimiento y foco
                         root.requestFocus();
