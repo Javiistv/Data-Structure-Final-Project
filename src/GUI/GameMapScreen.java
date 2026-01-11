@@ -49,10 +49,13 @@ public class GameMapScreen {
     private final double mapW;
     private final double mapH;
 
+    private boolean drawSky;
+
     private MediaPlayer mapMusic;
 
     private final List<Obstacle> obstacles = new ArrayList<>();
     private Obstacle currentInteractable = null;
+    private ImageView portal;
 
     private final Game game;
 
@@ -73,6 +76,14 @@ public class GameMapScreen {
     private static final double FV_COLLISION_OFFSET_Y = -18.0;
     private static final Double FV_COLLISION_W = null;
     private static final Double FV_COLLISION_H = null;
+
+    // Variables para encuentros aleatorios
+    private double encounterDistanceCounter = 0.0;
+    private static final double ENCOUNTER_DISTANCE_THRESHOLD = 10.0; // Distancia para checkear encuentro
+    private static final double ENCOUNTER_PROBABILITY = 0.15; // 15% de probabilidad
+    private boolean encounterCooldown = false;
+    private static final double ENCOUNTER_COOLDOWN_TIME = 4.0; // Segundos de cooldown
+    private double cooldownTimer = 0.0;
 
     private enum ObstacleType {
         VILLAGE, BLOCK
@@ -142,6 +153,7 @@ public class GameMapScreen {
 
         root.addEventFilter(MouseEvent.ANY, MouseEvent::consume);
 
+        drawSky = canCreateSkyPortal();
         populateVillagesFromList();
         populateExtraBlocks();
 
@@ -197,6 +209,79 @@ public class GameMapScreen {
                 clearInputState();
             }
         });
+    }
+
+    public boolean canCreateSkyPortal() {
+        boolean create = false;
+        if (game.getHero().existsCompletedTask(game.searchTask("M001")) && game.getHero().existsCompletedTask(game.searchTask("M002"))) {
+            if (portal == null) {
+                try {
+                    java.io.InputStream is = getClass().getResourceAsStream("/Resources/textures/Main/skyPortal.png");
+                    if (is != null) {
+                        Image img = new Image(is);
+                        portal = new ImageView(img);
+                        portal.setPreserveRatio(true);
+                        portal.setFitWidth(60);
+                        portal.setFitHeight(60);
+                        portal.setMouseTransparent(true);
+                        portal.setLayoutX(637.7563656646729);
+                        portal.setLayoutY(388.0335020000003);
+                        portal.getProperties().put("tag", "sky_portal");
+                        create = true;
+                    } else {
+                        System.err.println("Imagen no encontrada");
+                    }
+                } catch (Throwable t) {
+                    System.err.println("No se pudo cargar la imagen del portal: " + t.getMessage());
+                }
+            }
+
+            if (portal != null && !container.getChildren().contains(portal)) {
+                container.getChildren().add(portal);
+            }
+            if (portal != null) {
+                portal.toFront();
+            }
+        } else {
+            if (portal != null) {
+                try {
+                    container.getChildren().remove(portal);
+                } catch (Throwable ignored) {
+                }
+                portal = null;
+            }
+        }
+        return create;
+
+    }
+    // Método para actualizar dinámicamente el portal y sus colisiones
+
+    public void updatePortalStatus() {
+
+        double heroX = heroView.getLayoutX();
+        double heroY = heroView.getLayoutY();
+
+        if (portal != null && container.getChildren().contains(portal)) {
+            container.getChildren().remove(portal);
+        }
+        drawSky = canCreateSkyPortal();
+        populateVillagesFromList();
+
+        if (drawSky) {
+            double visualW = 64;
+            double visualH = 48;
+            addVillageAtCenter(new Point2D(666.4054159999995, 416.6147719999999),
+                    visualW, visualH, "SkyPortal");
+
+        }
+
+        if (debugEnabled) {
+            drawDebugObstacles();
+        }
+
+        heroView.setLayoutX(heroX);
+        heroView.setLayoutY(heroY);
+
     }
 
     public void setCombatMusicPath(String path) {
@@ -320,7 +405,7 @@ public class GameMapScreen {
             } else if (k == KeyCode.D || k == KeyCode.RIGHT) {
                 right = true;
                 heroView.setImage(game.getHero().getSpriteForDirection("Right"));
-                
+
             } else if (k == KeyCode.L) {
                 enterDebugSwamp();
             } else if (k == KeyCode.Q) {
@@ -333,7 +418,8 @@ public class GameMapScreen {
             if (handled) {
                 ev.consume();
             }
-        });
+        }
+        );
 
         root.addEventFilter(KeyEvent.KEY_RELEASED, ev -> {
             KeyCode k = ev.getCode();
@@ -477,6 +563,23 @@ public class GameMapScreen {
         } else {
             heroView.setLayoutX(proposedX);
             heroView.setLayoutY(proposedY);
+
+            // Calcular distancia recorrida
+            double distanceMoved = Math.sqrt(dx * dx + dy * dy);
+
+            // Manejar cooldown si está activo
+            if (encounterCooldown) {
+                cooldownTimer -= distanceMoved / SPEED; // Reducir timer basado en distancia
+                if (cooldownTimer <= 0) {
+                    encounterCooldown = false;
+                    cooldownTimer = 0.0;
+                }
+            }
+
+            // Solo verificar encuentros si no estamos en cooldown
+            if (!encounterCooldown && distanceMoved > 0) {
+                checkForRandomEncounter(distanceMoved);
+            }
         }
     }
 
@@ -655,9 +758,14 @@ public class GameMapScreen {
             new Point2D(431.47821799999986, 121.1205079999999),
             new Point2D(466.0058359999998, 121.1205079999999),
             new Point2D(399.6368480000001, 78.16393999999985),
-            new Point2D(693.5160080000004, 262.65198799999985),
-            new Point2D(722.2856060000005, 262.65198799999985),
-            new Point2D(745.1885540000004, 262.65198799999985)
+            new Point2D(594.7288399999999, 73.43280199999978),
+            new Point2D(640.799282000000, 102.12015799999979),
+            new Point2D(640.7992820000001, 136.67884399999977),
+            new Point2D(640.7992820000001, 174.2865499999998),
+            new Point2D(640.7992820000001, 203.07893599999974),
+            new Point2D(640.7992820000001, 234.75630799999973),
+            new Point2D(640.7992820000001, 257.79319399999974),
+            new Point2D(791.5319156646729, 260.33292199999977)
         };
 
         for (int i = 0; i < villageCenters.length; i++) {
@@ -667,6 +775,12 @@ public class GameMapScreen {
         addVillageAtCenter(new Point2D(432.9572420000002, 387.930548), visualW, visualH, "FIELD_VILLAGE");
         addVillageAtCenter(new Point2D(187.2432599999999, 160.468792), visualW, visualH, "FORESTHOUSE_Village");
         addVillageAtCenter(new Point2D(432.91, 130), visualW, visualH, "KINGDOMCASTLE_Village");
+        addVillageAtCenter(new Point2D(693.5160080000004, 262.65198799999985), visualW, visualH, "Volcano");
+        addVillageAtCenter(new Point2D(722.2856060000005, 262.65198799999985), visualW, visualH, "Volcano");
+        addVillageAtCenter(new Point2D(745.1885540000004, 262.65198799999985), visualW, visualH, "Volcano");
+        if (drawSky) {
+            addVillageAtCenter(new Point2D(666.4054159999995, 416.6147719999999), visualW, visualH, "SkyPortal");
+        }
     }
 
     private void populateExtraBlocks() {
@@ -795,6 +909,8 @@ public class GameMapScreen {
         boolean isFieldVillage = village != null && "FIELD_VILLAGE".equals(village.id);
         boolean isForestHouse = village != null && "FORESTHOUSE_Village".equals(village.id);
         boolean isKingdomCastle = village != null && "KINGDOMCASTLE_Village".equals(village.id);
+        boolean isSky = village != null && "SkyPortal".equals(village.id);
+        boolean isVolcano = village != null && "Volcano".equals(village.id);
 
         if (isFieldVillage) {
             final Point2D savedHeroTopLeft = getHeroMapTopLeft();
@@ -818,6 +934,7 @@ public class GameMapScreen {
                     }
                     heroView.setLayoutX(savedHeroTopLeft.getX());
                     heroView.setLayoutY(savedHeroTopLeft.getY());
+                    updatePortalStatus();
                     if (debugEnabled) {
                         drawDebugObstacles();
                     }
@@ -886,6 +1003,70 @@ public class GameMapScreen {
                     mover.start();
                 });
             });
+
+        } else if (isSky) {
+            if (drawSky) {
+                final Point2D savedHeroTopLeft = getHeroMapTopLeft();
+                clearInputState();
+                stopMapMusic();
+                try {
+                    FXGL.getGameScene().removeUINode(root);
+                } catch (Throwable ignored) {
+                }
+
+                SkyDungeon field = new SkyDungeon(game);
+                field.showWithLoading(null, () -> {
+                    Platform.runLater(() -> {
+                        MainScreen.hideMenu();
+                        startMapMusic();
+                        try {
+                            FXGL.getGameScene().addUINode(root);
+                        } catch (Throwable ignored) {
+                        }
+                        heroView.setLayoutX(savedHeroTopLeft.getX());
+                        heroView.setLayoutY(savedHeroTopLeft.getY());
+                        if (debugEnabled) {
+                            drawDebugObstacles();
+                        }
+                        root.requestFocus();
+                        clearInputState();
+                        mover.start();
+                    });
+                });
+            }
+
+        } else if (isVolcano) {
+            final Point2D savedHeroTopLeft = getHeroMapTopLeft();
+
+            clearInputState();
+
+            stopMapMusic();
+            try {
+                FXGL.getGameScene().removeUINode(root);
+            } catch (Throwable ignored) {
+            }
+
+            VolcanoCityEntrance field = new VolcanoCityEntrance(game);
+            field.showWithLoading(null, () -> {
+                Platform.runLater(() -> {
+                    MainScreen.hideMenu();
+                    startMapMusic();
+                    try {
+                        FXGL.getGameScene().addUINode(root);
+                    } catch (Throwable ignored) {
+                    }
+                    heroView.setLayoutX(savedHeroTopLeft.getX());
+                    heroView.setLayoutY(savedHeroTopLeft.getY());
+                    updatePortalStatus();
+                    if (debugEnabled) {
+                        drawDebugObstacles();
+                    }
+                    root.requestFocus();
+                    clearInputState();
+                    mover.start();
+                });
+            });
+
         } else {
 
             Alert a = new Alert(Alert.AlertType.INFORMATION);
@@ -928,6 +1109,7 @@ public class GameMapScreen {
                 }
                 heroView.setLayoutX(savedHeroTopLeft.getX());
                 heroView.setLayoutY(savedHeroTopLeft.getY());
+                updatePortalStatus();
                 if (debugEnabled) {
                     drawDebugObstacles();
                 }
@@ -989,6 +1171,29 @@ public class GameMapScreen {
     private void clearInputState() {
         up = down = left = right = false;
         draggingMap = false;
+    }
+
+    // Combate (MoveHero with collision tambien tiene parte de la logica)
+    private void checkForRandomEncounter(double distanceMoved) {
+        // Acumular distancia recorrida
+        encounterDistanceCounter += distanceMoved;
+
+        // Si hemos recorrido suficiente distancia, verificar encuentro
+        if (encounterDistanceCounter >= ENCOUNTER_DISTANCE_THRESHOLD) {
+            // Probabilidad de encuentro
+            if (Math.random() < ENCOUNTER_PROBABILITY) {
+                // Iniciar combate
+                openDebugCombat();
+
+                // Reiniciar contador y activar cooldown
+                encounterDistanceCounter = 0.0;
+                encounterCooldown = true;
+                cooldownTimer = ENCOUNTER_COOLDOWN_TIME;
+            } else {
+                // Reducir contador para siguiente check (pero no a cero)
+                encounterDistanceCounter -= ENCOUNTER_DISTANCE_THRESHOLD * 0.5;
+            }
+        }
     }
 
     private void openDebugCombat() {

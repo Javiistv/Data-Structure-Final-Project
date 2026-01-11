@@ -13,8 +13,7 @@ import javafx.application.Platform;
 import javafx.geometry.Point2D;
 import javafx.geometry.Rectangle2D;
 import javafx.geometry.Pos;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
+
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
@@ -32,7 +31,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import javafx.animation.TranslateTransition;
@@ -166,6 +164,7 @@ public class KingdomCastle {
             positionHeroAtEntrance();
             createStartRectAtHeroStart();
             createTransitionRects();
+            setHeroPosition(480.87223200000005, 768.0);
 
             PauseTransition wait = new PauseTransition(Duration.millis(600));
             wait.setOnFinished(e -> {
@@ -365,10 +364,79 @@ public class KingdomCastle {
                 "estatua1"
         ));
         obstacles.add(new Obstacle(
-                new Rectangle2D(320, 685, 30, 40),
-                ObstacleType.NPC,
-                "Maya"
+                new Rectangle2D(1053.6648806200026, 426.5433549000001, 40, 40),
+                ObstacleType.BUSH,
+                "arbusto1"
         ));
+        obstacles.add(new Obstacle(
+                new Rectangle2D(1102.773074620003, 374.7810249000001, 40, 40),
+                ObstacleType.BUSH,
+                "arbusto2"
+        ));
+        obstacles.add(new Obstacle(
+                new Rectangle2D(1010.4206006200029, 380.6170389000001, 40, 40),
+                ObstacleType.BUSH,
+                "arbusto3"
+        ));
+        obstacles.add(new Obstacle(
+                new Rectangle2D(961.390652620003, 423.83383290000006, 40, 40),
+                ObstacleType.BUSH,
+                "arbusto4"
+        ));
+
+        obstacles.add(new Obstacle(
+                new Rectangle2D(1152.0, 423.83383290000006, 30, 30),
+                ObstacleType.BUSH,
+                "agua1"
+        ));
+
+        obstacles.add(new Obstacle(
+                new Rectangle2D(1152.0, 465.4908299999995, 30, 30),
+                ObstacleType.BUSH,
+                "agua2"
+        ));
+        obstacles.add(new Obstacle(
+                new Rectangle2D(1152.0, 508.65202199999953, 30, 30),
+                ObstacleType.BUSH,
+                "agua3"
+        ));
+        obstacles.add(new Obstacle(
+                new Rectangle2D(1152.0, 554.8717919999995, 30, 30),
+                ObstacleType.BUSH,
+                "agua4"
+        ));
+        obstacles.add(new Obstacle(
+                new Rectangle2D(1152.0, 592.3379099999994, 30, 30),
+                ObstacleType.BUSH,
+                "agua5"
+        ));
+        obstacles.add(new Obstacle(
+                new Rectangle2D(1152.0, 629.8739579999992, 30, 30),
+                ObstacleType.BUSH,
+                "agua6"
+        ));
+        obstacles.add(new Obstacle(
+                new Rectangle2D(1152.0, 661.5840359999993, 30, 30),
+                ObstacleType.BUSH,
+                "agua7"
+        ));
+
+        obstacles.add(new Obstacle(
+                new Rectangle2D(1152.0, 693.2625059999992, 30, 30),
+                ObstacleType.BUSH,
+                "agua8"
+        ));
+        obstacles.add(new Obstacle(
+                new Rectangle2D(1152.0, 719.0955299999993, 30, 30),
+                ObstacleType.BUSH,
+                "agua9"
+        ));
+        obstacles.add(new Obstacle(
+                new Rectangle2D(1152.0, 792.0, 30, 30),
+                ObstacleType.BUSH,
+                "agua10"
+        ));
+
     }
 
     private void colissionInSide() {
@@ -442,6 +510,7 @@ public class KingdomCastle {
                 ObstacleType.BLOCK,
                 "cortina"
         ));
+
     }
 
     private void colisicions2Floor() {
@@ -1159,6 +1228,13 @@ public class KingdomCastle {
 
     private void addNpcsForExterior() {
         addNpc(game.getCharacters().get(31), 301.3052878000003, 660.4730311199996);
+        double x = 308.1560760000001;
+        double y = 667.2754919999998;
+        obstacles.add(new Obstacle(
+                new Rectangle2D(x, y, 24, 24),
+                ObstacleType.NPC,
+                "Maya"
+        ));
     }
 
     /*private void addNpcsForInterior() {
