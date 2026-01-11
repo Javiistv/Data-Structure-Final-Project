@@ -426,6 +426,14 @@ public class Game {
         items.add(new Wand("A crystal-tipped wand for powerful spells.", "Crystal Wand", "WND002", 40, 95, "Enhanced magic power", 450, 225));
         //31
         items.add(new HealingSpell("A powerful healing magic.", "Greater Heal", "HSP002", 0, 60, "Restores a large amount of HP", 300, 150));
+        //32
+        items.add(new Pike("A very long spear for keeping enemies at distance.", "Long Pike", "PK001", 42, 130, "Extra reach advantage", 400, 200));
+        //33
+        items.add(new Halberd("A ceremonial halberd with ornate design.", "Royal Halberd", "HLB002", 65, 150, "Increased critical chance", 600, 300));
+        //34
+        items.add(new Shotgun("A double-barreled shotgun for close combat.", "Double Barrel", "SHG002", 85, 70, "Massive close-range damage", 450, 2.5, 180));
+        //35
+        items.add(new Rifle("An automatic rifle for sustained fire.", "Assault Rifle", "RFL002", 70, 100, "Rapid fire capability", 500, 6.0, 220));
 
     }
 
@@ -664,6 +672,14 @@ public class Game {
         shopItems.add(items.get(2));
         shopItems.add(items.get(30));
         shopItems.add(items.get(31));
+
+        shopItems.add(items.get(23));
+        shopItems.add(items.get(14));
+        //Wares
+        shopItems.add(items.get(15));
+        shopItems.add(items.get(16));
+        shopItems.add(items.get(17));
+        shopItems.add(items.get(18));
     }
 
     public ArrayList<Item> getShopItems() {
